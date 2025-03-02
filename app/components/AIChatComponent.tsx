@@ -1,9 +1,10 @@
-// AIChatComponent.tsx
+'use client';
+
 import React, {useEffect, useRef, useState} from 'react';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import { List, ListItem, ListItemText } from '@mui/material';
-import '../app/globals.css';
+import {List, ListItem, ListItemText} from '@mui/material';
+import '../globals.css';
 
 
 export default function AIChatComponent() {
@@ -12,7 +13,7 @@ export default function AIChatComponent() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        messagesEndRef.current?.scrollIntoView({behavior: "smooth"});
     };
 
     useEffect(scrollToBottom, [aiResponse]);
@@ -53,7 +54,8 @@ export default function AIChatComponent() {
     };
 
     return (
-        <div className="flex flex-col justify-end h-screen p-6 bg-gradient-to-b from-[rgb(var(--background-start-rgb))] to-[rgb(var(--background-end-rgb))]">
+        <div
+            className="flex flex-col justify-end h-screen p-6 bg-gradient-to-b from-[rgb(var(--background-start-rgb))] to-[rgb(var(--background-end-rgb))]">
             <List className="overflow-auto px-3">
                 {aiResponse.map((response, index) => {
                     // Determine if the message is from the user or AI for styling
@@ -65,9 +67,9 @@ export default function AIChatComponent() {
                             className={`max-w-3/4 mb-2 p-2 rounded-lg  animate-fade-in-down shadow-inset transform transition-all duration-500 ${
                                 isUserMessage ? 'bg-gray-700 self-end' : 'bg-blue-500 text-white self-start'
                             }`}
-                            style={{ opacity: 0, animation: 'fadeInDown 0.5s ease forwards' }}
+                            style={{opacity: 0, animation: 'fadeInDown 0.5s ease forwards'}}
                         >
-                            <ListItemText primary={response} />
+                            <ListItemText primary={response}/>
                         </ListItem>
                     );
                 })}
@@ -82,8 +84,8 @@ export default function AIChatComponent() {
                     onChange={(e) => setUserInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleUserQuery()}
                     InputLabelProps={{
-                    className: "text-gray-400 mb-4"
-                }}
+                        className: "text-gray-400 mb-4"
+                    }}
                 />
                 <Button
                     variant="contained"
