@@ -51,54 +51,74 @@ export default function AIChatComponent() {
             setAiResponse([...aiResponse, errorMessage]);
         }
 
-
-        setUserInput(''); // Reset the input field
+        setAiResponse([...aiResponse, userInput]);
+        setUserInput('');
     };
 
     return (
-        <div
-            className="flex flex-col justify-end h-screen p-6 bg-gradient-to-b from-[rgb(var(--background-start-rgb))] to-[rgb(var(--background-end-rgb))]">
-            <List className="overflow-auto px-3">
+        <div className="flex-1 flex flex-col justify-end h-full relative">
+            {/* MESSAGE LIST */}
+            <List className="overflow-auto px-3 flex-1">
                 {aiResponse.map((response, index) => {
-                    // Determine if the message is from the user or AI for styling
-                    const isUserMessage = index % 2 === 0; // Replace with your actual logic
-
+                    const isUserMessage = index % 2 === 0;
                     return (
                         <ListItem
                             key={index}
-                            className={`max-w-3/4 mb-2 p-2 rounded-lg  animate-fade-in-down shadow-inset transform transition-all duration-500 ${
-                                isUserMessage ? 'bg-gray-700 self-end' : 'bg-blue-500 text-white self-start'
-                            }`}
+                            className={`max-w-3/4 mb-2 p-2 rounded-lg animate-fade-in-down 
+                ${isUserMessage ? 'bg-gray-700 self-end' : 'bg-blue-500 text-white self-start'}
+              `}
                             style={{opacity: 0, animation: 'fadeInDown 0.5s ease forwards'}}
                         >
                             <ListItemText primary={response}/>
                         </ListItem>
                     );
                 })}
+                <div ref={messagesEndRef}/>
             </List>
-            <div className="mt-4">
-                <TextField
-                    className="mb-4 bg-gray-800 text-white border border-gray-600"
-                    fullWidth
-                    label="Ask the AI"
-                    variant="outlined"
-                    value={userInput}
-                    onChange={(e) => setUserInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleUserQuery()}
-                    InputLabelProps={{
-                        className: "text-gray-400 mb-4"
-                    }}
-                />
-                <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleUserQuery}
-                    fullWidth
-                    className="bg-blue-600 shadow-bright transition duration-300 ease-in-out hover:bg-blue-700"
-                    // className="transition duration-300 ease-in-out hover:bg-blue-700"
-                >
-                    Submit
-                </Button>
+
+            {/* FLOATING INPUT (GLASS ISLAND) */}
+            <div className="w-full flex justify-center items-center py-4">
+                <div className="bg-black/40 backdrop-blur-md rounded-full flex items-center px-4 py-2 max-w-2xl w-full">
+                    <TextField
+                        fullWidth
+                        placeholder="Ask the AI"
+                        value={userInput}
+                        onChange={(e) => setUserInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleUserQuery()}
+                        variant="outlined"
+                        InputProps={{
+                            style: {
+                                backgroundColor: 'transparent',
+                                color: '#fff',
+                            }
+                        }}
+                        InputLabelProps={{
+                            style: {color: '#ccc'}
+                        }}
+                        sx={{
+                            '& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'rgba(255,255,255,0.3)'
+                            },
+                            '&:hover .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'rgba(255,255,255,0.5)'
+                            },
+                            '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#fff'
+                            },
+                            '& .MuiOutlinedInput-input': {
+                                color: '#fff'
+                            },
+                        }}
+                    />
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleUserQuery}
+                        className="ml-2 bg-blue-600 hover:bg-blue-700 transition-colors rounded-full"
+                    >
+                        Submit
+                    </Button>
+                </div>
             </div>
         </div>
     );
