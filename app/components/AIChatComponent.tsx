@@ -24,7 +24,7 @@ export default function AIChatComponent() {
         try {
             // const response = await fetch('http://localhost/api/test', {
             //todo If this works, replace with gpt and it'll work perfectly
-            const response = await fetch('/api/test', {
+            const response = await fetch('/test', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -33,7 +33,9 @@ export default function AIChatComponent() {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                console.error(`HTTP error! status: ${response.status}`);
+                setAiResponse([...aiResponse, `Error: HTTP ${response.status}`]);
+                return; // Stop further execution
             }
 
             const responseData = await response.text();
