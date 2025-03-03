@@ -6,6 +6,9 @@
     --foreground-rgb: 0, 0, 0;
     --background-start-rgb: 214, 219, 220;
     --background-end-rgb: 255, 255, 255;
+    --button-bg: rgba(0, 0, 0, 0.75);
+    --button-hover-bg: rgba(255, 255, 255, 0.1);
+    --shadow-color: rgba(5, 5, 5, 0.25);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -28,7 +31,7 @@ body {
     font-family: "Inter", sans-serif;
 }
 
-/* =================[ region  Art & Animations ]====================== */
+/* region Art & Animations */
 @keyframes fadeIn {
     0% {
         opacity: 0;
@@ -61,14 +64,12 @@ body {
     animation: fadeInDown 3.5s ease forwards;
 }
 
-
-/* Add this to your CSS file */
 .chat-container {
     max-width: 600px; /* or whatever max-width you want */
     margin: 0 auto;
     padding-bottom: 20px;
     box-shadow: inset 0 10px 20px rgba(255, 255, 255, 0.3);
-    background: radial-gradient(circle at top, rgba(255, 255, 255, 0.4), transparent);
+    background: #353535;
 
 }
 
@@ -90,12 +91,6 @@ body {
     align-self: flex-start;
 }
 
-
-/*
-  - Utility classes
-*/
-
-/* Enabled */
 @keyframes slowToFastToSlow {
     0% {
         transform: scale(0.9);
@@ -117,11 +112,12 @@ body {
     }
 }
 
+/* not used anywhere ?  */
 .animate-slowToFastToSlow {
     animation: slowToFastToSlow 1.2s ease-in-out forwards;
 }
 
-/* Disabled */
+/* DISABLED */
 /* Repeating shimmer effect (can be used on backgrounds or text) */
 @keyframes shimmer {
     0% {
@@ -169,7 +165,6 @@ body {
 }
 
 /* endregion */
-
 
 /* region Petr Knoll's Skeuomorphic Button Design xD */
 button {
@@ -283,6 +278,8 @@ button:active .button-inner {
 .shadow-bottom {
     box-shadow: 0 6px 15px -5px rgba(0, 0, 0, 0.4);
 }
+
+/* endregion */
 
 
 /* region Fancy Typography */
