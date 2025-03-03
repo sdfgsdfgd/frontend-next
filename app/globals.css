@@ -23,24 +23,25 @@ body {
             transparent,
             rgb(var(--background-end-rgb))
     ) rgb(var(--background-start-rgb));
+    cursor: url('https://www.gabrielatwell.com/icons/pointer.svg'), auto;
+    margin: 0;
+    font-family: "Inter", sans-serif;
 }
 
-
-/* region  Art & Animations */
-
+/* =================[ region  Art & Animations ]====================== */
 @keyframes fadeIn {
-    from {
+    0% {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(12px);
     }
-    to {
+    100% {
         opacity: 1;
         transform: translateY(0);
     }
 }
 
 .animate-fade-in {
-    animation: fadeIn 0.5s ease-out;
+    animation: fadeIn 0.5s ease-out forwards;
 }
 
 
@@ -142,7 +143,6 @@ body {
     animation: shimmer 2s infinite ease-in-out;
 }
 
-/* Enabled */
 @keyframes colorCycleGlow {
     0% {
         box-shadow: 6px -6px 12px 3px rgba(90, 197, 242, 0.01);
@@ -165,30 +165,7 @@ body {
 }
 
 .animate-colorCycleGlow {
-    animation: colorCycleGlow 4s infinite alternate;
-}
-
-/* Disabled */
-.luxury-reflection {
-    position: relative; /* container must be relative */
-}
-
-.luxury-reflection::before {
-    content: '';
-    position: inherit;
-    /* center it */
-    top: 0;
-    left: 0;
-    width: 88%;
-    height: 50%; /* cover the top half */
-    pointer-events: none;
-    border-radius: inherit; /* match the container's radius */
-    background: linear-gradient(
-            to bottom,
-            rgba(255, 255, 255, 0.15),
-            transparent
-    );
-    /* tweak the transparency or angle to taste */
+    animation: colorCycleGlow 6s linear infinite;
 }
 
 /* endregion */
@@ -224,16 +201,6 @@ button::after {
     mix-blend-mode: multiply;
 }
 
-button .button-outer {
-    position: relative;
-    z-index: 1;
-    border-radius: inherit;
-    transition: box-shadow 300ms ease;
-    will-change: box-shadow;
-    box-shadow: 0 0.05em 0.05em -0.01em rgba(5, 5, 5, 1),
-    0 0.01em 0.01em -0.01em rgba(5, 5, 5, 0.5),
-    0.15em 0.3em 0.1em -0.01em rgba(5, 5, 5, 0.25);
-}
 
 button:hover .button-outer {
     box-shadow: 0 0 0 0 rgba(5, 5, 5, 1), 0 0 0 0 rgba(5, 5, 5, 0.5),
@@ -302,6 +269,251 @@ button:hover .button-inner span {
 
 button:active .button-inner {
     transform: scale(0.975);
+}
+
+/* endregion */
+
+/* region Additional Animations & Micro-Interactions */
+
+/* 3D Light-Source Illusion Shadows */
+.shadow-top-inset {
+    box-shadow: inset 0 8px 10px -8px rgba(255, 255, 255, 0.1);
+}
+
+.shadow-bottom {
+    box-shadow: 0 6px 15px -5px rgba(0, 0, 0, 0.4);
+}
+
+
+/* region Fancy Typography */
+.luxury-heading {
+    font-weight: 800; /* extra bold */
+    letter-spacing: 0.05em; /* tracking-wide */
+}
+
+.luxury-text {
+    font-size: 0.875rem; /* text-sm */
+    letter-spacing: 0.025em;
+}
+
+.luxury-button-text {
+    text-transform: uppercase;
+    letter-spacing: 0.1em; /* tracking-wider */
+    font-weight: 600;
+}
+
+.hover-tilt {
+    transition: transform 0.3s ease;
+}
+
+.hover-tilt:hover {
+    transform: translateY(-2px) rotateX(2deg) scale(1.01);
+}
+
+@keyframes subtlePulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.02);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.animate-subtlePulse {
+    animation: subtlePulse 6s ease-in-out infinite;
+}
+
+/* Typing indicator animation */
+@keyframes typingDots {
+    0%, 100% {
+        opacity: 0.2;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+.typing-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    border-radius: 18px;
+    background-color: rgba(255, 255, 255, 0.1);
+    max-width: fit-content;
+}
+
+.typing-indicator span {
+    width: 6px;
+    height: 6px;
+    margin: 0 2px;
+    background-color: rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.typing-indicator span:nth-child(1) {
+    animation: typingDots 1.4s infinite 0s;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation: typingDots 1.4s infinite 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+    animation: typingDots 1.4s infinite 0.4s;
+}
+
+
+/* Luxury input field styling */
+.luxury-input {
+    font-feature-settings: "kern", "liga", "clig", "calt";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+/* Input focus glow effect */
+.input-focus-glow:focus-within {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3),
+    0 0 15px rgba(59, 130, 246, 0.2),
+    inset 0 0 4px rgba(255, 255, 255, 0.2);
+}
+
+/* Enhanced button styles */
+.luxury-button {
+    position: relative;
+    transition: all 0.2s ease-out;
+    overflow: hidden;
+}
+
+.luxury-button::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0) 100%);
+    pointer-events: none;
+}
+
+.luxury-button:hover::after {
+    opacity: 0.8;
+}
+
+
+/* Placeholder animation */
+@keyframes placeholderShimmer {
+    0% {
+        opacity: 0.5;
+    }
+    50% {
+        opacity: 0.8;
+    }
+    100% {
+        opacity: 0.5;
+    }
+}
+
+.luxury-input::placeholder {
+    color: rgba(180, 180, 180, 0.6);
+    animation: placeholderShimmer 4s infinite ease-in-out;
+    letter-spacing: 0.02em;
+}
+
+/* Enhanced focus state */
+.luxury-input:focus {
+    outline: none;
+    background: linear-gradient(
+            to right,
+            rgba(0, 0, 0, 0),
+            rgba(59, 130, 246, 0.02),
+            rgba(0, 0, 0, 0)
+    ) !important;
+}
+
+/* Glass panel effect */
+.glass-panel {
+    background: rgba(17, 25, 40, 0.75);
+    background: linear-gradient(
+            135deg,
+            rgba(17, 25, 40, 0.05) 0%,
+            rgba(30, 42, 70, 0.2) 50%,
+            rgba(17, 25, 40, 0.5) 100%
+    );
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Shimmering radial gradient effect */
+@keyframes radialShimmer {
+    0% {
+        background-position: 0 45%;
+        opacity: 0.7;
+        transform: scale(1.0);
+    }
+    20% {
+        background-position: 30% 48%;
+        opacity: 0.8;
+        transform: scale(1.02);
+    }
+    40% {
+        background-position: 70% 52%;
+        opacity: 0.9;
+        transform: scale(1.03);
+    }
+    60% {
+        background-position: 100% 56%;
+        opacity: 1;
+        transform: scale(1.04);
+    }
+    80% {
+        background-position: 70% 52%;
+        opacity: 0.9;
+        transform: scale(1.03);
+    }
+    100% {
+        background-position: 0 45%;
+        opacity: 0.7;
+        transform: scale(1.0);
+    }
+}
+
+.radial-shimmer {
+    position: relative;
+    overflow: hidden;
+}
+
+.radial-shimmer::before {
+    content: '';
+    position: absolute;
+    top: -20%;
+    left: -20%;
+    right: -20%;
+    bottom: -20%;
+    background: radial-gradient(
+            ellipse at center,
+            rgba(59, 130, 246, 0.07) 0%,
+            rgba(59, 130, 246, 0.05) 10%,
+            rgba(59, 130, 246, 0.03) 25%,
+            rgba(59, 130, 246, 0.02) 40%,
+            rgba(59, 130, 246, 0.01) 55%,
+            rgba(59, 130, 246, 0) 70%
+    );
+    background-size: 200% 200%;
+    pointer-events: none;
+    z-index: 1;
+    animation: radialShimmer 15s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite;
+    border-radius: inherit;
+    will-change: background-position, opacity, transform;
+    mix-blend-mode: overlay;
 }
 
 /* endregion */
