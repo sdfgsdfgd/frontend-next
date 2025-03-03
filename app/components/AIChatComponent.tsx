@@ -3,8 +3,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import { List, ListItem, ListItemText } from '@mui/material';
 import useDebounce from '../hooks/useDebounce';
+import MessageList from './MessageList'; // <-- Import the new component
 import '../globals.css';
 
 // Message type definitions
@@ -26,6 +26,7 @@ export default function AIChatComponent() {
   // Store messages with type for better rendering logic
   const [messages, setMessages] = useState<{ text: string, type: MessageType }[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -34,9 +35,9 @@ export default function AIChatComponent() {
     inputRef.current?.focus();
   }, []);
 
-  // Scroll to bottom when messages change or typing indicator appears
+  // Scroll to bottom when messages or typing state changes
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({behavior: "smooth"});
+    messagesEndRef.current?.scrollIntoView({behavior: 'smooth'});
   }, [messages, isTyping]);
 
   useEffect(() => {
@@ -47,7 +48,6 @@ export default function AIChatComponent() {
 
   const handleUserQuery = async () => {
     if (!userInput.trim()) return;
-
     // Add user message
     setMessages(prev => [...prev, {text: userInput, type: MSG_USER}]);
     setUserInput('');
@@ -56,24 +56,30 @@ export default function AIChatComponent() {
     // Simulate a delay for demo purposes
     setTimeout(() => {
       try {
-        // Simulated response
-        setMessages(prev => [...prev, {
-          text: "This is a simulated response since the actual endpoint is not available.",
-          type: MSG_AI
-        }]);
+        // Simulated AI response
+        setMessages(prev => [
+          ...prev,
+          {
+            text: "This is a simulated response since the actual endpoint is not available.",
+            type: MSG_AI
+          }
+        ]);
       } catch (error) {
         console.error('Error:', error);
-        setMessages(prev => [...prev, {
-          text: error instanceof Error ? `Error: ${error.message}` : 'An unknown error occurred',
-          type: MSG_AI
-        }]);
+        setMessages(prev => [
+          ...prev,
+          {
+            text: error instanceof Error ? `Error: ${error.message}` : 'An unknown error occurred',
+            type: MSG_AI
+          }
+        ]);
       } finally {
         setIsTyping(false);
       }
     }, 1500);
   };
 
-  // Common TextField props to reduce duplication
+  // Common TextField props
   const textFieldProps = {
     variant: "standard" as const,
     fullWidth: true,
@@ -101,7 +107,7 @@ export default function AIChatComponent() {
         caretColor: 'rgba(79, 190, 255, 0.9)',
       },
       ref: inputRef,
-      placeholder: "What's on your mind?",
+      placeholder: " ✨ ✨  sup  ✨ ✨  ✨",
     },
     InputLabelProps: {
       style: {
@@ -117,60 +123,37 @@ export default function AIChatComponent() {
   const containerClasses = `
     relative max-w-2xl w-full flex items-center rounded-full 
     transition duration-300 px-5 py-2.5 
-    
-    shadow-bright shadow-top-inset shadow-bottom
-    
-    glass-panel 
-    animate-colorCycleGlow 
-    
     focus-within:ring-2 ring-blue-500/60 ring-offset-2 ring-offset-gray-900/70
+    
+    shadow-top-inset 
+    shadow-bottom
+    
+    glass-panel
+    animate-colorCycleGlow 
+    radial-shimmer
+    
     border border-gray-800/50 input-focus-glow 
     overflow-hidden
   `;
   // Disabled / Removed:
   //
-  // radial-shimmer
   // animate-shimmer
   //
 
   return (
     <div className="flex-1 flex flex-col justify-end h-full relative">
-      {/* MESSAGE LIST */}
-      <List className="overflow-auto px-3 flex-1">
-        {messages.map((message, index) => (
-          <ListItem
-            key={index}
-            className={`max-w-3/4 mb-2 p-2 rounded-lg animate-fade-in ${messageStyles[message.type]}`}
-            style={{opacity: 0, animation: 'fadeInDown 0.5s ease forwards'}}
-          >
-            <ListItemText
-              primary={message.text}
-              primaryTypographyProps={{
-                className: "luxury-text luxury-input",
-                style: {fontFamily: 'inherit'}
-              }}
-            />
-          </ListItem>
-        ))}
-
-        {/* Typing indicator */}
-        {isTyping && (
-          <ListItem className="self-start">
-            <div className="typing-indicator animate-fade-in">
-              <span></span><span></span><span></span>
-            </div>
-          </ListItem>
-        )}
-
-        <div ref={messagesEndRef}/>
-      </List>
+      {/* Our extracted MessageList */}
+      <MessageList
+        messages={messages}
+        isTyping={isTyping}
+        messageStyles={messageStyles}
+        messagesEndRef={messagesEndRef}
+      />
 
       {/* FLOATING INPUT (GLASS ISLAND) */}
       <div className="w-full flex justify-center items-center py-4">
         <div className={containerClasses}>
           <TextField {...textFieldProps} />
-
-          {/* SUBMIT BUTTON inside the bubble */}
           <Button
             onClick={handleUserQuery}
             className="ml-3 rounded-full bg-blue-600/90 hover:bg-blue-500/90 text-sm font-medium text-white/95 px-4 py-1 normal-case shadow luxury-button-text hover-tilt luxury-button"
