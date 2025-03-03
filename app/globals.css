@@ -26,10 +26,17 @@ body {
 }
 
 
-/* Add fade-in effect from Tailwind */
+/* region  Art & Animations */
+
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .animate-fade-in {
@@ -37,7 +44,6 @@ body {
 }
 
 
-/* Added by GPT for Agent GPT components copy project */
 @keyframes fadeInDown {
     from {
         opacity: 0;
@@ -60,6 +66,9 @@ body {
     max-width: 600px; /* or whatever max-width you want */
     margin: 0 auto;
     padding-bottom: 20px;
+    box-shadow: inset 0 10px 20px rgba(255, 255, 255, 0.3);
+    background: radial-gradient(circle at top, rgba(255, 255, 255, 0.4), transparent);
+
 }
 
 .chat-bubble {
@@ -80,3 +89,219 @@ body {
     align-self: flex-start;
 }
 
+
+/*
+  - Utility classes
+*/
+
+/* Enabled */
+@keyframes slowToFastToSlow {
+    0% {
+        transform: scale(0.9);
+        opacity: 0.6;
+    }
+    20% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.03);
+    }
+    80% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.animate-slowToFastToSlow {
+    animation: slowToFastToSlow 1.2s ease-in-out forwards;
+}
+
+/* Disabled */
+/* Repeating shimmer effect (can be used on backgrounds or text) */
+@keyframes shimmer {
+    0% {
+        background-position: -200px 0;
+    }
+    100% {
+        background-position: 200px 0;
+    }
+}
+
+.animate-shimmer {
+    background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.05) 25%,
+            rgba(255, 255, 255, 0.1) 50%,
+            rgba(255, 255, 255, 0.05) 75%
+    );
+    background-size: 400px 100%;
+    animation: shimmer 2s infinite ease-in-out;
+}
+
+/* Enabled */
+@keyframes colorCycleGlow {
+    0% {
+        box-shadow: 6px -6px 12px 3px rgba(90, 197, 242, 0.01);
+    }
+    20% {
+        box-shadow: -1px -1px 16px 4px rgba(255, 70, 163, 0.1);
+    }
+    40% {
+        box-shadow: 0 0 20px 5px rgba(255, 200, 70, 0.2);
+    }
+    60% {
+        box-shadow: 0 0 16px 4px rgba(90, 242, 120, 0.15);
+    }
+    80% {
+        box-shadow: 0 0 12px 3px rgba(90, 197, 242, 0.08);
+    }
+    100% {
+        box-shadow: 0 0 12px 3px rgba(90, 197, 242, 0.02);
+    }
+}
+
+.animate-colorCycleGlow {
+    animation: colorCycleGlow 4s infinite alternate;
+}
+
+/* Disabled */
+.luxury-reflection {
+    position: relative; /* container must be relative */
+}
+
+.luxury-reflection::before {
+    content: '';
+    position: inherit;
+    /* center it */
+    top: 0;
+    left: 0;
+    width: 88%;
+    height: 50%; /* cover the top half */
+    pointer-events: none;
+    border-radius: inherit; /* match the container's radius */
+    background: linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0.15),
+            transparent
+    );
+    /* tweak the transparency or angle to taste */
+}
+
+/* endregion */
+
+
+/* region Petr Knoll's Skeuomorphic Button Design xD */
+button {
+    all: unset;
+    cursor: pointer;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    position: relative;
+    border-radius: 999vw;
+    background-color: rgba(0, 0, 0, 0.75);
+    box-shadow: -0.15em -0.15em 0.15em -0.075em rgba(5, 5, 5, 0.25),
+    0.0375em 0.0375em 0.0675em 0 rgba(5, 5, 5, 0.1);
+}
+
+button::after {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    width: calc(100% + 0.3em);
+    height: calc(100% + 0.3em);
+    top: -0.15em;
+    left: -0.15em;
+    border-radius: inherit;
+    background: linear-gradient(-135deg,
+    rgba(5, 5, 5, 0.5),
+    transparent 20%,
+    transparent 100%);
+    filter: blur(0.0125em);
+    opacity: 0.25;
+    mix-blend-mode: multiply;
+}
+
+button .button-outer {
+    position: relative;
+    z-index: 1;
+    border-radius: inherit;
+    transition: box-shadow 300ms ease;
+    will-change: box-shadow;
+    box-shadow: 0 0.05em 0.05em -0.01em rgba(5, 5, 5, 1),
+    0 0.01em 0.01em -0.01em rgba(5, 5, 5, 0.5),
+    0.15em 0.3em 0.1em -0.01em rgba(5, 5, 5, 0.25);
+}
+
+button:hover .button-outer {
+    box-shadow: 0 0 0 0 rgba(5, 5, 5, 1), 0 0 0 0 rgba(5, 5, 5, 0.5),
+    0 0 0 0 rgba(5, 5, 5, 0.25);
+}
+
+.button-inner {
+    --inset: 0.035em;
+    position: relative;
+    z-index: 1;
+    border-radius: inherit;
+    padding: 1em 1.5em;
+    background-image: linear-gradient(135deg,
+    rgba(230, 230, 230, 1),
+    rgba(180, 180, 180, 1));
+    transition: box-shadow 300ms ease, clip-path 250ms ease,
+    background-image 250ms ease, transform 250ms ease;
+    will-change: box-shadow, clip-path, background-image, transform;
+    overflow: clip;
+    clip-path: inset(0 0 0 0 round 999vw);
+    box-shadow: /* 1 */ 0 0 0 0 inset rgba(5, 5, 5, 0.1),
+        /* 2 */ -0.05em -0.05em 0.05em 0 inset rgba(5, 5, 5, 0.25),
+        /* 3 */ 0 0 0 0 inset rgba(5, 5, 5, 0.1),
+        /* 4 */ 0 0 0.05em 0.2em inset rgba(255, 255, 255, 0.25),
+        /* 5 */ 0.025em 0.05em 0.1em 0 inset rgba(255, 255, 255, 1),
+        /* 6 */ 0.12em 0.12em 0.12em inset rgba(255, 255, 255, 0.25),
+        /* 7 */ -0.075em -0.25em 0.25em 0.1em inset rgba(5, 5, 5, 0.25);
+}
+
+button:hover .button-inner {
+    clip-path: inset(clamp(1px, 0.0625em, 2px) clamp(1px, 0.0625em, 2px) clamp(1px, 0.0625em, 2px) clamp(1px, 0.0625em, 2px) round 999vw);
+    box-shadow: /* 1 */ 0.1em 0.15em 0.05em 0 inset rgba(5, 5, 5, 0.75),
+        /* 2 */ -0.025em -0.03em 0.05em 0.025em inset rgba(5, 5, 5, 0.5),
+        /* 3 */ 0.25em 0.25em 0.2em 0 inset rgba(5, 5, 5, 0.5),
+        /* 4 */ 0 0 0.05em 0.5em inset rgba(255, 255, 255, 0.15),
+        /* 5 */ 0 0 0 0 inset rgba(255, 255, 255, 1),
+        /* 6 */ 0.12em 0.12em 0.12em inset rgba(255, 255, 255, 0.25),
+        /* 7 */ -0.075em -0.12em 0.2em 0.1em inset rgba(5, 5, 5, 0.25);
+}
+
+button .button-inner span {
+    position: relative;
+    z-index: 4;
+    font-family: "Inter", sans-serif;
+    letter-spacing: -0.05em;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0);
+    background-image: linear-gradient(135deg,
+    rgba(25, 25, 25, 1),
+    rgba(75, 75, 75, 1));
+    -webkit-background-clip: text;
+    background-clip: text;
+    transition: transform 250ms ease;
+    display: block;
+    will-change: transform;
+    text-shadow: rgba(0, 0, 0, 0.1) 0 0 0.1em;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+button:hover .button-inner span {
+    transform: scale(0.975);
+}
+
+button:active .button-inner {
+    transform: scale(0.975);
+}
+
+/* endregion */

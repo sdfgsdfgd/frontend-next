@@ -20,12 +20,13 @@ export default function RootLayout({
         <body
             className={`${inter.className} bg-gray-900 text-gray-100`}
             // Above: sets a default dark background & text color for the entire app
+          // todo: hd img  +  shadow gradients +  radial gradients  +  conic gradients of shadows lol. All the crafts of all deviantart and illustrator magic of all times
         >
         <div className="flex min-h-screen">
             {/* SIDEBAR */}
             <aside className="hidden md:block w-64 bg-gray-800 p-6">
                 {/*
-              Later you can add expand/collapse logic or a button to toggle this
+              add expand/collapse logic or a button to toggle this
               For now, it's a static sidebar that only shows on medium+ screens
             */}
                 <nav>
