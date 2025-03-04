@@ -257,7 +257,6 @@ body {
     animation: typingDots 1.4s infinite 0.4s;
 }
 
-
 /* Luxury input field styling */
 .luxury-input {
     font-feature-settings: "kern", "liga", "clig", "calt";

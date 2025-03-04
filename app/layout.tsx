@@ -40,7 +40,7 @@ export default function RootLayout({children,}: {
       </aside>
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col overflow-visible min-h-screen w-auto max-w-full">
         {children}
       </main>
     </div>
