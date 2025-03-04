@@ -1,7 +1,6 @@
 "use client";
 
 import React, { RefObject } from 'react';
-import { List, ListItem, ListItemText } from '@mui/material';
 
 // Message type definitions
 type MessageType = 'user' | 'ai';
@@ -25,34 +24,43 @@ export default function MessageList({
                                       messagesEndRef
                                     }: MessageListProps) {
   return (
-    <List className="overflow-auto px-3 flex-1">
+    <div className="flex-1 overflow-visible flex flex-col justify-end p-4 space-y-4">
+
       {messages.map((message, index) => (
-        <ListItem
+        <div
           key={index}
-          className={`max-w-3/4 mb-2 p-2 rounded-lg animate-fade-in ${messageStyles[message.type]}`}
-          style={{opacity: 0, animation: 'fadeInDown 0.5s ease forwards'}}
+          className={`
+            relative
+            w-fit
+            max-w-[80%]
+            px-4 py-2
+            rounded-xl
+            ${messageStyles[message.type]}
+            fadeInDown
+          `}
+          style={{
+            animation: "fadeInDown 2.5s ease forwards",
+            opacity: 0.2
+          }}
         >
-          <ListItemText
-            primary={message.text}
-            primaryTypographyProps={{
-              className: "luxury-text luxury-input",
-              style: {fontFamily: 'inherit'}
-            }}
-          />
-        </ListItem>
+          <span className="luxury-text luxury-input text-sm sm:text-base">
+            {message.text}
+          </span>
+        </div>
       ))}
 
-      {/* Typing indicator */}
       {isTyping && (
-        <ListItem className="self-start">
-          <div className="typing-indicator animate-fade-in">
-            <span></span><span></span><span></span>
+        <div className="w-fit max-w-[80%] self-start p-2 rounded-xl bg-white/10 backdrop-blur-md">
+          <div className="flex space-x-1 items-center typing-indicator">
+            <span className="w-2 h-2 bg-white/50 rounded-full animate-bounce"></span>
+            <span className="w-2 h-2 bg-white/50 rounded-full animate-bounce delay-75"></span>
+            <span className="w-2 h-2 bg-white/50 rounded-full animate-bounce delay-150"></span>
           </div>
-        </ListItem>
+        </div>
       )}
 
-      {/* This div ensures we can scroll into view */}
+      {/* Always scroll to here */}
       <div ref={messagesEndRef}/>
-    </List>
+    </div>
   );
 }

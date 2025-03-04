@@ -11,8 +11,29 @@ const MSG_USER: MessageType = "user";
 const MSG_AI: MessageType = "ai";
 
 const messageStyles: Record<MessageType, string> = {
-  [MSG_USER]: "bg-gray-700 self-end shadow-bottom",
-  [MSG_AI]: "bg-blue-500 text-white self-start shadow-top-inset shadow-bottom luxury-reflection hover-tilt",
+  [MSG_USER]: `
+    bg-gradient-to-r from-gray-700 to-gray-900 
+    text-white
+    shadow-xl shadow-black/50
+    border border-white/10
+    backdrop-blur-sm
+    self-end
+    hover:scale-[1.01]
+    transition
+    duration-300
+  `,
+  [MSG_AI]: `
+    bg-gradient-to-r from-transparent to-gray-800 to-transparent
+    text-white
+    shadow-2xl shadow-blue-800/50
+    border border-white/20
+    backdrop-blur-sm
+    self-start
+    animate-colorCycleGlow
+    hover:scale-[1.01]
+    transition
+    duration-300
+  `
 };
 
 export default function AIChatComponent() {
@@ -41,7 +62,7 @@ export default function AIChatComponent() {
   };
 
   return (
-    <div className="flex-1 flex flex-col justify-end h-full relative">
+    <div className="flex-1 flex flex-col justify-end w-full h-full relative shadow-lg">
       <MessageList messages={messages}
                    isTyping={isTyping}
                    messageStyles={messageStyles}
@@ -52,7 +73,7 @@ export default function AIChatComponent() {
 
         focus-within:ring-2 ring-blue-500/60 ring-offset-2 ring-offset-gray-900/70
 
-        shadow-top-inset shadow-bottom
+        shadow-top-inset shadow-bottom shadow-2xl
         animate-colorCycleGlow input-focus-glow border border-gray-800/50">
           <ChatInput userInput={userInput}
                      setUserInput={setUserInput}
