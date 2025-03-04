@@ -36,9 +36,8 @@ export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInput
       {/* Actual contentEditable div */}
       <div
         className="
-          luxury-input px-3 py-2 text-white bg-transparent outline-none
-          border border-gray-800/50 rounded-lg
-          w-auto max-w-full
+          luxury-input px-3 py-2 text-white outline-none bg-none
+          w-auto max-w-full min-w-[120px]
         "
         contentEditable
         suppressContentEditableWarning
