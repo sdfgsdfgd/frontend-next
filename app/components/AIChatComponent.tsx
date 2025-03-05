@@ -63,6 +63,7 @@ export default function AIChatComponent() {
 
   return (
     <div className="flex-1 flex flex-col justify-end w-full h-full relative shadow-lg">
+
       <MessageList messages={messages}
                    isTyping={isTyping}
                    messageStyles={messageStyles}
