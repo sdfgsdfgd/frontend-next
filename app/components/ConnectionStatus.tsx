@@ -12,18 +12,18 @@ export default function ConnectionStatus({url}: ConnectionStatusProps) {
     connectionStatus,
     reconnect,
     lastMessage,
-    sendMessage
+    sendMessage,
   } = useWebSocket({
     url,
     reconnectInterval: 3000,
-    maxReconnectAttempts: 10
+    maxReconnectAttempts: 10,
   });
 
   const [lastPingTime, setLastPingTime] = useState<Date | null>(null);
   const [roundTripMs, setRoundTripMs] = useState<number | null>(null);
   const [serverDeltaMs, setServerDeltaMs] = useState<number | null>(null);
 
-  // -- Helper: color code latency
+  // Helper: color code latency
   const getLatencyColor = (latency: number) => {
     if (latency < 100) return 'text-green-400';
     if (latency < 250) return 'text-yellow-300';
@@ -31,20 +31,20 @@ export default function ConnectionStatus({url}: ConnectionStatusProps) {
     return 'text-red-500';
   };
 
-  // -- Send a manual ping
+  // Manual ping
   const sendPing = useCallback(() => {
     if (connectionStatus === 'connected') {
       const now = Date.now();
       sendMessage(
         JSON.stringify({
           type: 'ping',
-          clientTimestamp: now
+          clientTimestamp: now,
         })
       );
     }
   }, [connectionStatus, sendMessage]);
 
-  // -- Listen for any incoming messages (especially "pong")
+  // Listen for any incoming "pong" messages
   useEffect(() => {
     if (!lastMessage) return;
 
@@ -101,11 +101,14 @@ export default function ConnectionStatus({url}: ConnectionStatusProps) {
   const getStatusStyles = () => {
     switch (connectionStatus) {
       case 'connected':
-        return 'bg-green-500';
+        // Single pulse once when we connect
+        return 'bg-green-500 animate-neon-glow';
       case 'connecting':
+        // Repeated pulse while connecting   (... could also use animate-ping or animate-bounce ...)
         return 'bg-yellow-500 animate-pulse';
       case 'disconnected':
-        return 'bg-red-500';
+        // Single pulse (reverse) to show a little effect on disconnect
+        return 'bg-red-500 animate-pulse-once-reverse';
       default:
         return 'bg-gray-500';
     }
@@ -116,7 +119,7 @@ export default function ConnectionStatus({url}: ConnectionStatusProps) {
       {/* Row: Connection Status Indicator */}
       <div className="flex items-center space-x-2">
         <div
-          className={`h-3 w-3 rounded-full ${getStatusStyles()}`}
+          className={`h-3 w-3 rounded-full transition-all ${getStatusStyles()}`}
           title={`Status: ${connectionStatus}`}
         />
         <span>
