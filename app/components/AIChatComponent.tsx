@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import useDebounce from "../hooks/useDebounce";
 import MessageList from "./MessageList";
-import ChatInput from "./ChatInput"; // ✅ NEW COMPONENT
+import ChatInput from "./ChatInput";
 import "../globals.css";
 
 type MessageType = "user" | "ai";
@@ -62,23 +62,25 @@ export default function AIChatComponent() {
   };
 
   return (
-    <div className="flex-1 flex flex-col justify-end w-full h-full relative shadow-lg">
-
-      <MessageList messages={messages}
-                   isTyping={isTyping}
-                   messageStyles={messageStyles}
-                   messagesEndRef={messagesEndRef}/>
+    <div className="flex-1 flex flex-col justify-end w-full h-full relative">
+      <MessageList 
+        messages={messages}
+        isTyping={isTyping}
+        messageStyles={messageStyles}
+        messagesEndRef={messagesEndRef}
+      />
       <div className="flex justify-center items-start py-4 min-h-[4rem] w-auto max-w-full">
         <div className="relative flex flex-col rounded-lg overflow-x-auto w-auto max-w-full
-        transition duration-300 px-5 py-2.5
-
-        focus-within:ring-2 ring-blue-500/60 ring-offset-2 ring-offset-gray-900/70
-
-        shadow-top-inset shadow-bottom shadow-2xl
-        animate-colorCycleGlow input-focus-glow border border-gray-800/50">
-          <ChatInput userInput={userInput}
-                     setUserInput={setUserInput}
-                     onSubmit={handleUserQuery}/>
+          transition duration-300 px-5 py-2.5
+          focus-within:ring-2 ring-blue-500/60 ring-offset-2 ring-offset-gray-900/70
+          shadow-top-inset shadow-bottom shadow-2xl
+          animate-colorCycleGlow input-focus-glow border border-gray-800/50"
+        >
+          <ChatInput 
+            userInput={userInput}
+            setUserInput={setUserInput}
+            onSubmit={handleUserQuery}
+          />
         </div>
       </div>
     </div>
