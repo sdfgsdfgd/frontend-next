@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
+import useVisibilityState from '@/app/hooks/useVisibilityState';
 import { motion } from 'framer-motion';
 
 interface CanvasSidebarEffectProps {
@@ -23,16 +24,7 @@ const formatRGBA = (baseColor: string, alpha: number): string => {
     }
   }
   
-  // Handle rgb format
-  if (baseColor.startsWith('rgb')) {
-    // Extract the RGB components from rgb(r, g, b)
-    const rgbParts = baseColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/) || [];
-    if (rgbParts.length >= 4) {
-      return `rgba(${rgbParts[1]}, ${rgbParts[2]}, ${rgbParts[3]}, ${alpha})`;
-    }
-  }
-  
-  // Handle hex format - convert to rgba
+  // Handle hex color format
   if (baseColor.startsWith('#')) {
     const r = parseInt(baseColor.slice(1, 3), 16);
     const g = parseInt(baseColor.slice(3, 5), 16);
@@ -40,13 +32,15 @@ const formatRGBA = (baseColor: string, alpha: number): string => {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
   
-  // Fallback
-  return `rgba(100, 100, 100, ${alpha})`;
+  // Default fallback for other formats
+  return `rgba(100, 255, 218, ${alpha})`;
 };
 
 export default function CanvasSidebarEffect({ isOpen, toggleSidebar, width }: CanvasSidebarEffectProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const requestRef = useRef<number>();
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const animFrameRef = useRef<number>(0);
+  const lastTimeRef = useRef<number>(0);
   const particlesRef = useRef<any[]>([]);
   const fogParticlesRef = useRef<any[]>([]);
   const cursorTrailRef = useRef<any[]>([]);
@@ -60,11 +54,9 @@ export default function CanvasSidebarEffect({ isOpen, toggleSidebar, width }: Ca
     reflectionGradient: ['rgba(99, 102, 241, 0.6)', 'rgba(139, 92, 246, 0.8)', 'rgba(236, 72, 153, 0.6)']
   });
   
-  // Animation state tracker - helps recover from page/visibility events
-  const isVisibleRef = useRef<boolean>(true);
-  const lastFrameTimeRef = useRef<number>(performance.now());
-  const isAnimatingRef = useRef<boolean>(false);
-
+  // Use shared visibility hook
+  const { isVisible, opacity } = useVisibilityState();
+  
   // Handle mouse movement for cursor trails
   const handleMouseMove = useCallback((event: MouseEvent) => {
     const canvas = canvasRef.current;
@@ -95,47 +87,6 @@ export default function CanvasSidebarEffect({ isOpen, toggleSidebar, width }: Ca
     lastMousePosRef.current = { x, y };
   }, []);
 
-  // Handle visibility change - pause/resume animations when page is hidden/visible
-  const handleVisibilityChange = useCallback(() => {
-    if (document.hidden) {
-      isVisibleRef.current = false;
-      
-      // Pause animation loop by canceling the frame
-      if (requestRef.current) {
-        cancelAnimationFrame(requestRef.current);
-        isAnimatingRef.current = false;
-      }
-    } else {
-      isVisibleRef.current = true;
-      
-      // Resume animation loop if it was previously running but got paused
-      if (!isAnimatingRef.current) {
-        lastFrameTimeRef.current = performance.now(); // Reset timer to avoid huge time deltas
-        requestRef.current = requestAnimationFrame(animate);
-        isAnimatingRef.current = true;
-      }
-    }
-  }, []);
-  
-  // Safely start the animation loop
-  const startAnimationLoop = useCallback(() => {
-    if (!isAnimatingRef.current && isVisibleRef.current) {
-      lastFrameTimeRef.current = performance.now();
-      requestRef.current = requestAnimationFrame(animate);
-      isAnimatingRef.current = true;
-    }
-  }, []);
-  
-  // Safely stop the animation loop
-  const stopAnimationLoop = useCallback(() => {
-    if (isAnimatingRef.current) {
-      if (requestRef.current) {
-        cancelAnimationFrame(requestRef.current);
-      }
-      isAnimatingRef.current = false;
-    }
-  }, []);
-
   // Initialize animation target when isOpen changes
   useEffect(() => {
     targetProgressRef.current = isOpen ? 1 : 0;
@@ -149,28 +100,33 @@ export default function CanvasSidebarEffect({ isOpen, toggleSidebar, width }: Ca
 
   // Set up canvas animation
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const canvas = document.createElement('canvas');
+    canvasRef.current = canvas;
     
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Set up visibility change detection
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    const sidebar = document.querySelector('.sidebar') as HTMLElement;
+    if (!sidebar) return;
     
-    // Additional recovery methods for mobile and sleep scenarios
-    window.addEventListener('focus', startAnimationLoop);
-    window.addEventListener('blur', stopAnimationLoop);
-    window.addEventListener('online', startAnimationLoop); // Resume when network reconnects
-    window.addEventListener('resize', startAnimationLoop); // Resume on resize (common wake trigger)
-
+    canvas.width = width;
+    canvas.height = window.innerHeight;
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.width = `${width}px`;
+    canvas.style.height = '100%';
+    canvas.style.pointerEvents = 'none';
+    
+    sidebar.appendChild(canvas);
+    ctxRef.current = canvas.getContext('2d');
+    
     // Resize canvas to match device pixel ratio for sharpness
     const resizeCanvas = () => {
       const { width, height } = canvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
       canvas.width = width * dpr;
       canvas.height = height * dpr;
-      ctx.scale(dpr, dpr);
+      if (ctxRef.current) {
+        ctxRef.current.scale(dpr, dpr);
+      }
     };
 
     // Initialize fog particles
@@ -201,50 +157,39 @@ export default function CanvasSidebarEffect({ isOpen, toggleSidebar, width }: Ca
     initFogParticles();
     
     // Start animation loop
-    lastFrameTimeRef.current = performance.now();
-    requestRef.current = requestAnimationFrame(animate);
-    isAnimatingRef.current = true;
+    lastTimeRef.current = performance.now();
+    animFrameRef.current = requestAnimationFrame(animate);
     
     // Cleanup
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', startAnimationLoop);
-      window.removeEventListener('blur', stopAnimationLoop);
-      window.removeEventListener('online', startAnimationLoop);
-      window.removeEventListener('resize', startAnimationLoop);
       window.removeEventListener('resize', resizeCanvas);
       canvas.removeEventListener('mousemove', handleMouseMove);
-      
-      if (requestRef.current) {
-        cancelAnimationFrame(requestRef.current);
-        isAnimatingRef.current = false;
+      cancelAnimationFrame(animFrameRef.current);
+      if (sidebar && canvas) {
+        sidebar.removeChild(canvas);
       }
     };
-  }, [handleMouseMove, handleVisibilityChange, startAnimationLoop, stopAnimationLoop]);
-
-  // Animation function
-  const animate = () => {
-    if (!isVisibleRef.current) {
-      isAnimatingRef.current = false;
-      return;
-    }
-    
+  }, [width, handleMouseMove]);
+  
+  // Animation loop
+  function animate(timestamp: number) {
+    const ctx = ctxRef.current;
     const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
     
     if (!ctx || !canvas) {
-      isAnimatingRef.current = false;
       return;
     }
     
-    // Calculate time delta, capping it to prevent huge jumps after sleep
-    const now = performance.now();
-    const maxDelta = 100; // Cap at 100ms (prevents huge time jumps after sleep)
-    const delta = Math.min(now - lastFrameTimeRef.current, maxDelta);
-    lastFrameTimeRef.current = now;
+    // Calculate delta time
+    const now = timestamp;
+    const deltaTime = Math.min(now - lastTimeRef.current, 100); // Cap at 100ms
+    lastTimeRef.current = now;
     
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Apply global opacity from shared hook
+    ctx.globalAlpha = opacity;
     
     // Calculate current position for animation
     const currentProgress = animationProgressRef.current;
@@ -254,7 +199,7 @@ export default function CanvasSidebarEffect({ isOpen, toggleSidebar, width }: Ca
     if (currentProgress !== targetProgress) {
       // Use delta time for smooth animation regardless of frame rate
       const speedFactor = 0.005; // Adjust this for animation speed
-      const animDelta = (targetProgress - currentProgress) * speedFactor * (delta / 16.667);
+      const animDelta = (targetProgress - currentProgress) * speedFactor * (deltaTime / 16.667);
       animationProgressRef.current += animDelta;
       
       // Prevent overshooting
@@ -305,8 +250,8 @@ export default function CanvasSidebarEffect({ isOpen, toggleSidebar, width }: Ca
       });
     }
     
-    // Scale animation speed by delta time for consistent speeds across devices
-    const timeScale = delta / 16.667; // 16.667ms is ~60fps
+    // Scale animation speed by delta time for consistent speeds
+    const timeScale = deltaTime / 16.667; // 16.667ms is ~60fps
     
     // Draw fog particles
     fogParticlesRef.current.forEach((particle) => {
@@ -418,9 +363,8 @@ export default function CanvasSidebarEffect({ isOpen, toggleSidebar, width }: Ca
     // Draw sidebar position indicator based on animation progress
     const sidebarWidth = width * animationProgressRef.current;
     
-    // Draw light sweep effect - a horizontal light reflection that moves across the sidebar
-    // Use a fixed-rate animation independent of sleep/wake
-    const sweepProgress = ((now % 10000) / 10000); // 10-second cycle
+    // Draw light sweep effect - a horizontal light reflection
+    const sweepProgress = ((timestamp % 10000) / 10000); // 10-second cycle
     const sweepPosition = sweepProgress * canvas.width;
     
     if (animationProgressRef.current > 0.05) {
@@ -437,19 +381,14 @@ export default function CanvasSidebarEffect({ isOpen, toggleSidebar, width }: Ca
       ctx.fillRect(0, 0, sidebarWidth, canvas.height);
     }
     
-    // Continue animation loop
-    isAnimatingRef.current = true;
-    requestRef.current = requestAnimationFrame(animate);
-  };
-
+    // Continue animation as long as we're visible or fading out
+    if (isVisible || opacity > 0) {
+      animFrameRef.current = requestAnimationFrame(animate);
+    }
+  }
+  
   return (
     <div className="absolute inset-0 overflow-hidden">
-      <canvas 
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full"
-        style={{ pointerEvents: 'none' }}
-      />
-      
       {/* Toggle Button with Glass Effect */}
       <motion.button
         className="absolute top-4 right-4 z-50 w-12 h-12 rounded-full backdrop-blur-lg bg-opacity-20 bg-gray-800 flex items-center justify-center overflow-hidden group"

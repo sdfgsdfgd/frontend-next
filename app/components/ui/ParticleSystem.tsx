@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef } from 'react';
+import useVisibilityState from '@/app/hooks/useVisibilityState';
 
 interface Particle {
   x: number;
@@ -70,44 +71,14 @@ export default function ParticleSystem({
   const animFrameRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
   
-  // Animation state tracking for recovery
-  const isVisibleRef = useRef<boolean>(true);
+  // Use shared visibility hook with a 2-second fade out
+  const { isVisible, opacity } = useVisibilityState(2000);
   const isAnimatingRef = useRef<boolean>(false);
   
   // Helper function for random values
   const random = (min: number, max: number) => Math.random() * (max - min) + min;
   
-  // Handle visibility change
-  const handleVisibilityChange = useCallback(() => {
-    if (document.hidden) {
-      isVisibleRef.current = false;
-      // Pause animation when page is hidden
-      if (animFrameRef.current) {
-        cancelAnimationFrame(animFrameRef.current);
-        isAnimatingRef.current = false;
-      }
-    } else {
-      isVisibleRef.current = true;
-      // Resume animation when page becomes visible again
-      if (!isAnimatingRef.current) {
-        lastTimeRef.current = performance.now(); // Reset time to avoid huge jumps
-        animFrameRef.current = requestAnimationFrame(animate);
-        isAnimatingRef.current = true;
-      }
-    }
-  }, []);
-  
-  // Safely start the animation loop
-  const startAnimationLoop = useCallback(() => {
-    if (!isAnimatingRef.current && isVisibleRef.current) {
-      lastTimeRef.current = performance.now();
-      animFrameRef.current = requestAnimationFrame(animate);
-      isAnimatingRef.current = true;
-    }
-  }, []);
-  
-  // Initialize canvasgithub
-
+  // Initialize canvas
   useEffect(() => {
     if (!containerRef.current) return;
     
@@ -126,19 +97,8 @@ export default function ParticleSystem({
     containerRef.current.appendChild(canvas);
     
     // Get canvas context
-    ctxRef.current = canvas.getContext('2d');
-    
-    // Set up visibility change detection and recovery mechanisms
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', startAnimationLoop);
-    window.addEventListener('blur', () => {
-      if (animFrameRef.current) {
-        cancelAnimationFrame(animFrameRef.current);
-        isAnimatingRef.current = false;
-      }
-    });
-    window.addEventListener('online', startAnimationLoop); // Recovery when network reconnects
-    window.addEventListener('resize', startAnimationLoop); // Recovery on resize
+    const ctx = canvas.getContext('2d');
+    ctxRef.current = ctx;
     
     // Start animation loop
     lastTimeRef.current = performance.now();
@@ -147,25 +107,25 @@ export default function ParticleSystem({
     
     // Clean up
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', startAnimationLoop);
-      window.removeEventListener('blur', () => {});
-      window.removeEventListener('online', startAnimationLoop);
-      window.removeEventListener('resize', startAnimationLoop);
-      
       cancelAnimationFrame(animFrameRef.current);
       if (containerRef.current && canvas) {
         containerRef.current.removeChild(canvas);
       }
     };
-  }, [anchor, width, height, handleVisibilityChange, startAnimationLoop]);
+  }, [anchor, width, height]);
   
   // Generate particles periodically
   const generateParticles = (deltaTime: number) => {
     if (!canvasRef.current) return;
     
+    // Don't generate particles when nearly invisible
+    if (opacity < 0.1) return;
+    
+    // Scale generation with opacity
+    const scaledIntensity = intensity * opacity;
+    
     // Calculate number of particles to generate based on intensity and frame time
-    const particlesToGenerate = Math.floor(random(0, 2) * intensity * (deltaTime / 16));
+    const particlesToGenerate = Math.floor(random(0, 2) * scaledIntensity * (deltaTime / 16));
     
     for (let i = 0; i < particlesToGenerate; i++) {
       // Determine x position based on anchor
@@ -227,29 +187,28 @@ export default function ParticleSystem({
   
   // Animation loop - separate function to allow for recovery
   function animate(timestamp: number) {
-    if (!isVisibleRef.current) {
-      isAnimatingRef.current = false;
-      return;
-    }
-    
     const ctx = ctxRef.current;
     const canvas = canvasRef.current;
     
     if (!ctx || !canvas) {
+      console.log('ParticleSystem: Missing context or canvas, stopping animation');
       isAnimatingRef.current = false;
       return;
     }
     
-    // Calculate delta time, capping it to prevent huge jumps after sleep/wake cycles
+    // Calculate delta time, capping it to prevent huge jumps
     const now = timestamp;
-    const maxDelta = 100; // Cap at 100ms (prevents huge time jumps after sleep)
+    const maxDelta = 100; // Cap at 100ms
     const deltaTime = Math.min(now - lastTimeRef.current, maxDelta);
     lastTimeRef.current = now;
     
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Generate new particles - scaled to frame time
+    // Apply global opacity from visibility hook
+    ctx.globalAlpha = opacity;
+    
+    // Generate and update particles
     generateParticles(deltaTime);
     
     // Calculate time scaling factor for consistent animation speeds
@@ -257,12 +216,12 @@ export default function ParticleSystem({
     
     // Update and draw particles
     particlesRef.current.forEach((particle, index) => {
-      // Update position - scaled to frame time
+      // Update position - scaled by frame time
       particle.x += particle.speedX * timeScale;
       particle.y += particle.speedY * timeScale;
       
-      // Update life and alpha - scaled to frame time
-      particle.life += timeScale;
+      // Update life and alpha - scaled by frame time
+      particle.life += 1 * timeScale;
       particle.alpha -= particle.decay * timeScale;
       
       // Remove dead particles
@@ -306,9 +265,13 @@ export default function ParticleSystem({
       }
     });
     
-    // Continue animation
-    isAnimatingRef.current = true;
-    animFrameRef.current = requestAnimationFrame(animate);
+    // Continue animation as long as we're visible or fading out
+    if (isVisible || opacity > 0) {
+      animFrameRef.current = requestAnimationFrame(animate);
+      isAnimatingRef.current = true;
+    } else {
+      isAnimatingRef.current = false;
+    }
   }
   
   return (

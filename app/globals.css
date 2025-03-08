@@ -484,6 +484,76 @@ body {
 
 /* endregion */
 
+/* Add this near the other animation keyframes in the Art & Animations region */
+
+@keyframes contentShift {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  15% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateX(var(--shift-amount, 0));
+    opacity: 1;
+  }
+}
+
+/* Sidebar responsive animation classes */
+.sidebar-content-shift {
+  animation: contentShift 500ms cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+/* Add subtle depth effects */
+.content-depth-effect {
+  transition: box-shadow 500ms ease, transform 500ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.sidebar-open .content-depth-effect {
+  box-shadow: -10px 0 30px -15px rgba(0, 0, 0, 0.5);
+  transform: perspective(1000px) translateZ(10px);
+}
+
+.sidebar-closed .content-depth-effect {
+  box-shadow: -2px 0 10px -5px rgba(0, 0, 0, 0.3);
+  transform: perspective(1000px) translateZ(0);
+}
+
+/* Subtle highlight effect when sidebar toggles */
+.sidebar-transition-highlight {
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-transition-highlight::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5), transparent);
+  transform: translateX(-100%);
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.sidebar-highlight-active.sidebar-transition-highlight::after {
+  animation: highlightSweep 1s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+@keyframes highlightSweep {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
 
 
 

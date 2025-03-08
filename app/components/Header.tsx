@@ -6,6 +6,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useWorkspace } from "../context/WorkspaceContext";
 import WorkspaceDisplay from "./workspace/WorkspaceDisplay";
 import AuthModal from "./auth/AuthModal";
+import { useSidebar } from '@/app/context/SidebarContext';
+import dynamic from 'next/dynamic';
+
+// Dynamically import the existing GlassEffect to avoid SSR issues
+const GlassEffect = dynamic(() => import('./ui/GlassEffect'), { ssr: false });
 
 // Helper to check if user likely has a session based on cookies
 const hasLikelySession = () => {
@@ -21,6 +26,8 @@ export default function Header() {
   const { workspace, isWorkspaceSelected } = useWorkspace();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [likelyAuthenticated, setLikelyAuthenticated] = useState(false);
+  const { isOpen } = useSidebar();
+  const [hasSidebarChanged, setHasSidebarChanged] = useState(false);
   
   // Smart first render - check for likely session
   useEffect(() => {
@@ -97,10 +104,32 @@ export default function Header() {
     exit: { opacity: 0 }
   };
   
+  // Add this effect to detect sidebar state changes and trigger animations
+  useEffect(() => {
+    setHasSidebarChanged(true);
+    const timer = setTimeout(() => setHasSidebarChanged(false), 500);
+    return () => clearTimeout(timer);
+  }, [isOpen]);
+  
   return (
-    <header className="bg-gray-800 border-b border-gray-700">
-      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <div className="flex items-center space-x-4">
+    <header 
+      className={`
+        bg-gray-900/90 border-b border-gray-700 transition-all duration-500
+        relative z-10 overflow-hidden
+      `}
+    >
+      {/* Add the existing glass effect */}
+      <div className="absolute inset-0 overflow-hidden" style={{ opacity: 0.7 }}>
+        <GlassEffect />
+      </div>
+      
+      {/* Existing header content */}
+      <div className="container mx-auto px-4 py-3 flex justify-between items-center relative z-10">
+        <div className={`
+          flex items-center space-x-4 transition-transform duration-500
+          ${hasSidebarChanged ? 'scale-105' : 'scale-100'}
+          ${isOpen ? 'translate-x-2' : '-translate-x-1'}
+        `}>
           <h1 className="text-xl font-bold text-white">Arcana</h1>
           
           {/* Show workspace display if selected */}

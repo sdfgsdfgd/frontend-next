@@ -28,26 +28,41 @@ export default function useWebSocket({
 
   const connect = useCallback(() => {
     try {
+      // Close existing connection if any
+      if (socketRef.current?.readyState === WebSocket.OPEN || 
+          socketRef.current?.readyState === WebSocket.CONNECTING) {
+        console.log('Closing existing WebSocket connection before creating a new one');
+        socketRef.current.close();
+      }
+      
+      console.log(`Connecting to WebSocket at ${url}...`);
       const socket = new WebSocket(url);
       socketRef.current = socket;
       setConnectionStatus('connecting');
 
       socket.onopen = () => {
-        console.log('WebSocket connection established');
+        console.log('WebSocket connection established successfully');
         setConnectionStatus('connected');
         reconnectAttemptsRef.current = 0;
       };
 
       socket.onmessage = (event) => {
+        console.log('WebSocket message received:', event.data);
         setLastMessage(event.data);
       };
 
-      socket.onclose = () => {
-        console.log('WebSocket connection closed');
+      socket.onclose = (event) => {
+        console.log(`WebSocket connection closed with code ${event.code}: ${event.reason}`);
         setConnectionStatus('disconnected');
         
-        // Attempt reconnection if not at max attempts
-        if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+        // Check for specific close reasons
+        if (event.code === 1013) { // Try again later (server at capacity)
+          console.warn('Server is at capacity, will try again later');
+        }
+        
+        // Only attempt automatic reconnection for unexpected closures or if server requests retry
+        if ((event.code >= 1001 && event.code <= 1013) && reconnectAttemptsRef.current < maxReconnectAttempts) {
+          console.log(`Reconnect attempt ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts} in ${reconnectInterval}ms`);
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttemptsRef.current += 1;
             connect();
@@ -56,12 +71,21 @@ export default function useWebSocket({
       };
 
       socket.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        socket.close();
+        console.error('WebSocket error occurred:', error);
+        // Don't close here, let the onclose handler deal with reconnection
       };
     } catch (error) {
       console.error('Failed to connect to WebSocket:', error);
       setConnectionStatus('disconnected');
+      
+      // Attempt to reconnect after error
+      if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+        console.log(`Reconnect attempt ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts} in ${reconnectInterval}ms`);
+        reconnectTimeoutRef.current = setTimeout(() => {
+          reconnectAttemptsRef.current += 1;
+          connect();
+        }, reconnectInterval);
+      }
     }
   }, [url, reconnectInterval, maxReconnectAttempts]);
 
@@ -70,9 +94,14 @@ export default function useWebSocket({
    */
   const sendMessage = useCallback((message: string) => {
     if (socketRef.current?.readyState === WebSocket.OPEN) {
+      console.log('Sending WebSocket message:', message);
       socketRef.current.send(message);
     } else {
-      console.warn('WebSocket is not connected');
+      console.warn(`WebSocket is not connected (state: ${socketRef.current?.readyState}). Cannot send message.`);
+      if (socketRef.current?.readyState === undefined || socketRef.current?.readyState === WebSocket.CLOSED) {
+        console.log('Attempting to reconnect before sending message...');
+        reconnect();
+      }
     }
   }, []);
 
@@ -80,12 +109,16 @@ export default function useWebSocket({
    * Force a reconnect attempt, clearing any existing timeouts.
    */
   const reconnect = useCallback(() => {
+    console.log('Manually initiating WebSocket reconnection');
+    
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
     
     if (socketRef.current) {
       socketRef.current.close();
+      socketRef.current = null;
     }
     
     reconnectAttemptsRef.current = 0;
@@ -96,15 +129,19 @@ export default function useWebSocket({
    * On first mount, connect. Also clean up on unmount.
    */
   useEffect(() => {
+    console.log('WebSocket hook initialized, establishing connection...');
     connect();
     
     return () => {
+      console.log('Cleaning up WebSocket connection');
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
       
       if (socketRef.current) {
-        socketRef.current.close();
+        socketRef.current.close(1000, 'Component unmounted');
+        socketRef.current = null;
       }
     };
   }, [connect]);

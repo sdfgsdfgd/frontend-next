@@ -9,6 +9,7 @@ import GlassOverlay from "./components/ui/GlassOverlay";
 import AuthCard from "./components/auth/AuthCard";
 import WorkspaceCard from "./components/workspace/WorkspaceCard";
 import { ModalControlContext } from "./context/ModalContext";
+import ContentSyncEffect from "./components/ui/ContentSyncEffect";
 
 export default function Home() {
   const { data: session, status: authStatus } = useSession();
@@ -56,36 +57,38 @@ export default function Home() {
         setWorkspaceSelectorOpen: setIsWorkspaceSelectorOpen
       }}
     >
-      <div className="flex-1 flex flex-col min-h-0 max-w-full">
-        {/* Header is always visible */}
-        <Header />
-        
-        {/* Chat area with overlays */}
-        <div className="flex-1 relative overflow-hidden">
-          {/* The chat component with conditional opacity */}
-          <div className={`absolute inset-0 transition-opacity duration-300 ${(!isAuthenticated || !isWorkspaceSelected) ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-            <AIChatComponent />
+      <ContentSyncEffect>
+        <div className="flex-1 flex flex-col min-h-0 max-w-full">
+          {/* Header is always visible */}
+          <Header />
+          
+          {/* Chat area with overlays */}
+          <div className="flex-1 relative overflow-hidden">
+            {/* The chat component with conditional opacity */}
+            <div className={`absolute inset-0 transition-opacity duration-300 ${(!isAuthenticated || !isWorkspaceSelected) ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+              <AIChatComponent />
+            </div>
+            
+            {/* Authentication Overlay */}
+            <GlassOverlay 
+              isVisible={isAuthModalOpen} 
+              blurIntensity={3}
+              overlayOpacity={0.2}
+            >
+              <AuthCard onClose={() => setIsAuthModalOpen(false)} />
+            </GlassOverlay>
+            
+            {/* Workspace Selection Overlay */}
+            <GlassOverlay 
+              isVisible={isWorkspaceSelectorOpen}
+              blurIntensity={3}
+              overlayOpacity={0.2}
+            >
+              <WorkspaceCard onClose={() => setIsWorkspaceSelectorOpen(false)} />
+            </GlassOverlay>
           </div>
-          
-          {/* Authentication Overlay */}
-          <GlassOverlay 
-            isVisible={isAuthModalOpen} 
-            blurIntensity={3}
-            overlayOpacity={0.2}
-          >
-            <AuthCard onClose={() => setIsAuthModalOpen(false)} />
-          </GlassOverlay>
-          
-          {/* Workspace Selection Overlay */}
-          <GlassOverlay 
-            isVisible={isWorkspaceSelectorOpen}
-            blurIntensity={3}
-            overlayOpacity={0.2}
-          >
-            <WorkspaceCard onClose={() => setIsWorkspaceSelectorOpen(false)} />
-          </GlassOverlay>
         </div>
-      </div>
+      </ContentSyncEffect>
     </ModalControlContext.Provider>
   );
 }

@@ -31,7 +31,7 @@ export default function ConnectionStatus({url}: ConnectionStatusProps) {
     return 'text-red-500';
   };
 
-  // Manual ping
+  // Manual ping - Updated to match your Ktor message format
   const sendPing = useCallback(() => {
     if (connectionStatus === 'connected') {
       const now = Date.now();
@@ -41,23 +41,26 @@ export default function ConnectionStatus({url}: ConnectionStatusProps) {
           clientTimestamp: now,
         })
       );
+      console.log('Sent ping to Ktor backend:', now);
     }
   }, [connectionStatus, sendMessage]);
 
-  // Listen for any incoming "pong" messages
+  // Listen for any incoming "pong" messages - Updated to match your Ktor response format
   useEffect(() => {
     if (!lastMessage) return;
 
-    console.log('ConnectionStatus: lastMessage = ', lastMessage);
+    console.log('ConnectionStatus: received message = ', lastMessage);
 
     try {
       const data = JSON.parse(lastMessage);
       console.log('Parsed data:', data);
+      
+      // Check if it's a pong message from your Ktor backend
       if (data.type === 'pong') {
         // The server should reply with { type: "pong", clientTimestamp, serverTimestamp }
         const {clientTimestamp, serverTimestamp} = data;
         const now = Date.now();
-        console.log('Got a PONG, timestamps = ', data.clientTimestamp, data.serverTimestamp);
+        console.log('Got a PONG response, timestamps = ', clientTimestamp, serverTimestamp);
 
         // (1) Round-trip = now - clientTimestamp
         if (typeof clientTimestamp === 'number') {
@@ -73,7 +76,7 @@ export default function ConnectionStatus({url}: ConnectionStatusProps) {
       }
     } catch (err) {
       // Not a valid JSON or not a "pong" we care about
-      console.error('Failed to parse lastMessage', err);
+      console.error('Failed to parse message from WebSocket', err);
     }
   }, [lastMessage]);
 
@@ -90,6 +93,7 @@ export default function ConnectionStatus({url}: ConnectionStatusProps) {
   // Ping once after initial connection, just to test quickly
   useEffect(() => {
     if (connectionStatus === 'connected') {
+      console.log('WebSocket connection established, sending initial ping in 500ms');
       const timer = setTimeout(() => {
         sendPing();
       }, 500);
