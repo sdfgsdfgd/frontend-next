@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { useWorkspace, Workspace } from "@/app/context/WorkspaceContext";
 import { 
   FaGithub, FaFolder, FaArrowRight, FaSearch, FaCheck, 
   FaStar, FaCodeBranch, FaLock, FaEye, FaCode, FaTimes,
-  FaSpinner, FaFolderOpen
+  FaSpinner, FaFolderOpen, FaUpload, FaInfoCircle
 } from "react-icons/fa";
+import { useDropzone, FileWithPath } from "react-dropzone";
 
 // Helper to format dates
 const formatDate = (dateString: string) => {
@@ -112,26 +113,81 @@ export default function WorkspaceCard({ onClose }: WorkspaceCardProps) {
     }
   };
   
-  // Handle local folder selection (in a real app would use file system API)
-  const handleLocalFolderSelect = () => {
-    // Mock folder selection - would use file system API in real implementation
-    const mockPath = "/Users/developer/projects/my-app";
-    const mockName = "my-app";
-    
-    setLocalFolderPath(mockPath);
-    setLocalFolderName(mockName);
+  // Handle local folder selection using File System Access API where supported
+  const handleLocalFolderSelect = async () => {
+    try {
+      // Check if the File System Access API is available
+      if ('showDirectoryPicker' in window) {
+        setIsLoading(true);
+        // @ts-ignore - TypeScript might not recognize this API yet
+        const dirHandle = await window.showDirectoryPicker();
+        const path = dirHandle.name; // Only get the folder name, not the full path due to security
+        setLocalFolderPath(path);
+        // Store the directory handle for potential future use
+        // In a real app, you would persist this with permissions
+        setDirectoryHandle(dirHandle);
+      } else {
+        // Fallback for browsers without File System Access API
+        alert("Your browser doesn't support directory selection. Try using Chrome or Edge.");
+      }
+    } catch (error) {
+      // User canceled or error occurred
+      console.log("Directory selection canceled or error occurred:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
   
+  // Handle drag and drop (note: browsers limit what info is available due to security)
+  const onDrop = (acceptedFiles: FileWithPath[]) => {
+    // For security reasons, browsers don't provide the real file path
+    // We can only access file objects, not the containing folder path
+    
+    // If files were dropped, use the first folder name as an identifier
+    if (acceptedFiles.length > 0) {
+      // Extract a folder name from the first file's path or use its name
+      // This is NOT the real full path for security reasons
+      const file = acceptedFiles[0];
+      const pathParts = file.path ? file.path.split('/') : [];
+      
+      // Try to find a folder name from the path, or use the first file's parent folder name
+      const folderName = pathParts.length > 1 ? pathParts[pathParts.length - 2] : 'Selected Folder';
+      
+      setLocalFolderPath(folderName);
+      // We'll store the actual file objects for later use
+      setSelectedFiles(acceptedFiles);
+    }
+  };
+  
+  // Setup dropzone
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    noClick: true, // Prevent click from opening file dialog (we'll use the Browse button for that)
+    noKeyboard: true
+  });
+
+  // Function to check if File System Access API is supported
+  const [fsApiSupported, setFsApiSupported] = useState(false);
+  const [directoryHandle, setDirectoryHandle] = useState<any>(null);
+  const [selectedFiles, setSelectedFiles] = useState<FileWithPath[]>([]);
+
+  // Check for File System Access API support
+  useEffect(() => {
+    setFsApiSupported('showDirectoryPicker' in window);
+  }, []);
+
   // Handle form submission for local folder
   const handleLocalSubmit = () => {
-    if (!localFolderPath || !localFolderName) return;
+    if (!localFolderPath) return;
     
     setIsLoading(true);
     
+    // In a real application, you would save the directory handle
+    // and integrate with backend/native system APIs
     setWorkspace({
       type: "local",
-      name: localFolderName,
-      path: localFolderPath
+      name: localFolderPath, // Using the folder name directly
+      path: localFolderPath  // This won't be a full path for security reasons
     });
     
     setTimeout(() => {
@@ -139,7 +195,7 @@ export default function WorkspaceCard({ onClose }: WorkspaceCardProps) {
       onClose();
     }, 500);
   };
-  
+
   return (
     <div className="w-[450px] p-6">
       {/* Header */}
@@ -318,45 +374,75 @@ export default function WorkspaceCard({ onClose }: WorkspaceCardProps) {
             className="space-y-4"
           >
             <div>
-              <label className="block text-gray-300 text-sm mb-1">Folder Name</label>
-              <input
-                type="text"
-                value={localFolderName}
-                onChange={(e) => setLocalFolderName(e.target.value)}
-                placeholder="my-project"
-                className="w-full p-2 bg-gray-800 bg-opacity-70 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-gray-300 text-sm mb-1">Folder Path</label>
-              <div className="flex">
-                <input
-                  type="text"
-                  value={localFolderPath}
-                  readOnly
-                  placeholder="/path/to/your/project"
-                  className="flex-1 p-2 bg-gray-800 bg-opacity-70 border border-gray-700 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                />
-                <button
-                  onClick={handleLocalFolderSelect}
-                  className="bg-gray-700 hover:bg-gray-600 px-3 rounded-r-lg flex items-center justify-center border-t border-r border-b border-gray-700"
-                >
-                  Browse
-                </button>
+              <label className="block text-gray-300 text-sm mb-1">Project Folder</label>
+              <div 
+                {...getRootProps()} 
+                className={`border-2 border-dashed rounded-lg p-4 transition-all ${
+                  isDragActive 
+                    ? 'border-blue-500 bg-blue-500 bg-opacity-10' 
+                    : 'border-gray-700 hover:border-gray-500'
+                }`}
+              >
+                <input {...getInputProps()} />
+                
+                {localFolderPath ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center flex-1 overflow-hidden">
+                      <FaFolderOpen className="text-blue-400 mr-2 flex-shrink-0" />
+                      <span className="text-gray-200 truncate">{localFolderPath}</span>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setLocalFolderPath("");
+                        setDirectoryHandle(null);
+                        setSelectedFiles([]);
+                      }}
+                      className="text-gray-400 hover:text-white ml-2 flex-shrink-0"
+                    >
+                      <FaTimes />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <FaUpload className="mx-auto text-gray-400 mb-2 text-2xl" />
+                    <p className="text-gray-300 font-medium">Drag & drop your project folder here</p>
+                    <p className="text-gray-400 text-sm mt-1">or</p>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleLocalFolderSelect();
+                      }}
+                      className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <FaSpinner className="animate-spin" />
+                      ) : (
+                        'Browse'
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
-              <p className="mt-1 text-xs text-gray-400">
-                Note: In a real app, this would use a folder picker dialog.
-              </p>
+              
+              <div className="mt-2 text-xs text-gray-400 flex items-start">
+                <FaInfoCircle className="mr-1 mt-0.5 flex-shrink-0" />
+                <span>
+                  {fsApiSupported 
+                    ? "Using the File System Access API. You'll need to grant permission to access the selected folder."
+                    : "Your browser has limited folder access capabilities. For best results, use Chrome or Edge."}
+                </span>
+              </div>
             </div>
             
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleLocalSubmit}
-              disabled={!localFolderPath || !localFolderName || isLoading}
+              disabled={!localFolderPath || isLoading}
               className={`w-full p-3 rounded-lg flex items-center justify-center font-medium mt-4 ${
-                localFolderPath && localFolderName && !isLoading
+                localFolderPath && !isLoading
                   ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' 
                   : 'bg-gray-700 text-gray-400 cursor-not-allowed'
               }`}
