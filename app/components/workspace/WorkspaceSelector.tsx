@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaGithub, FaFolder, FaTimes, FaSearch, FaCheck, FaStar, FaCodeBranch, FaLock, FaEye, FaCode } from "react-icons/fa";
 
@@ -29,12 +29,103 @@ interface WorkspaceSelectorProps {
 }
 
 export default function WorkspaceSelector({ isOpen, onClose, onSelectWorkspace }: WorkspaceSelectorProps) {
-  const { data: session } = useSession();
-  const [tab, setTab] = useState<"github" | "local">(session?.provider === "github" ? "github" : "local");
+  const { user, isAuthenticated } = useAuth();
+  const [tab, setTab] = useState<"github" | "local">(isAuthenticated ? "github" : "local");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRepoId, setSelectedRepoId] = useState<number | null>(null);
   const [localFolderPath, setLocalFolderPath] = useState("");
   const [localFolderName, setLocalFolderName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [githubRepos, setGithubRepos] = useState<any[]>([]);
+  
+  // Fetch GitHub repositories when component mounts
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchGitHubRepos();
+    }
+  }, [isAuthenticated]);
+  
+  // Fetch GitHub repositories
+  const fetchGitHubRepos = async () => {
+    try {
+      setIsLoading(true);
+      
+      const token = localStorage.getItem('github-access-token');
+      if (!token) return;
+      
+      const response = await fetch('https://api.github.com/user/repos?sort=updated&per_page=100', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const repos = await response.json();
+        setGithubRepos(repos);
+        
+        // Auto-select first repo if there's only one
+        if (repos.length === 1) {
+          setSelectedRepoId(repos[0].id);
+        }
+      } else {
+        console.error('[WORKSPACE] Failed to fetch GitHub repos');
+      }
+    } catch (error) {
+      console.error('[WORKSPACE] Error fetching GitHub repos:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Helper to redirect to GitHub auth
+  const triggerGitHubAuth = () => {
+    setIsLoading(true);
+    
+    try {
+      // Set auth in-progress flag in localStorage
+      localStorage.setItem('github-auth-in-progress', 'true');
+      
+      // Generate state parameter for CSRF protection
+      const state = generateRandomString(32);
+      localStorage.setItem('github-auth-state', state);
+      
+      // Set a cookie for the GitHub auth attempt
+      document.cookie = "github_auth_attempt=true; path=/; max-age=300";
+      
+      // Construct the GitHub OAuth URL
+      const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || '';
+      const redirectUri = encodeURIComponent(window.location.origin + '/api/auth/callback/github');
+      const scope = encodeURIComponent('read:user user:email repo');
+      
+      const githubUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
+      
+      console.log('[WORKSPACE] Redirecting to GitHub for authentication');
+      
+      // Redirect to GitHub
+      window.location.href = githubUrl;
+    } catch (error) {
+      console.error('[WORKSPACE] Error redirecting to GitHub auth:', error);
+      setIsLoading(false);
+    }
+  };
+  
+  // Handle auto-selection when only one repo
+  useEffect(() => {
+    if (isAuthenticated && tab === 'github') {
+      setSelectedRepoId(githubRepos[0].id);
+    }
+  }, [isAuthenticated, tab, githubRepos]);
+  
+  // Helper to generate random string for state parameter
+  function generateRandomString(length: number) {
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return result;
+  }
   
   // Handle repository selection
   const handleSelectRepo = (repoId: number) => {
@@ -43,9 +134,9 @@ export default function WorkspaceSelector({ isOpen, onClose, onSelectWorkspace }
   
   // Handle form submission for GitHub repo
   const handleGithubSubmit = () => {
-    if (!selectedRepoId || !session?.githubRepos) return;
+    if (!selectedRepoId || !githubRepos) return;
     
-    const selectedRepo = session.githubRepos.find(repo => repo.id === selectedRepoId);
+    const selectedRepo = githubRepos.find(repo => repo.id === selectedRepoId);
     if (!selectedRepo) return;
     
     onSelectWorkspace({
@@ -73,7 +164,7 @@ export default function WorkspaceSelector({ isOpen, onClose, onSelectWorkspace }
   };
   
   // Filter repos based on search term
-  const filteredRepos = session?.githubRepos?.filter(repo => 
+  const filteredRepos = githubRepos?.filter(repo => 
     repo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (repo.description && repo.description.toLowerCase().includes(searchTerm.toLowerCase()))
   ) || [];
@@ -123,7 +214,7 @@ export default function WorkspaceSelector({ isOpen, onClose, onSelectWorkspace }
                 <button
                   className={`px-4 py-2 flex items-center ${tab === 'github' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400'}`}
                   onClick={() => setTab('github')}
-                  disabled={!session?.githubRepos?.length}
+                  disabled={!githubRepos?.length}
                 >
                   <FaGithub className="mr-2" /> GitHub Repositories
                 </button>
@@ -138,7 +229,7 @@ export default function WorkspaceSelector({ isOpen, onClose, onSelectWorkspace }
               {/* GitHub Repositories Tab */}
               {tab === 'github' && (
                 <div className="space-y-6">
-                  {session?.githubRepos?.length ? (
+                  {githubRepos?.length ? (
                     <>
                       <div className="relative">
                         <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -170,7 +261,7 @@ export default function WorkspaceSelector({ isOpen, onClose, onSelectWorkspace }
                                       <FaCheck className="text-blue-500 mr-2" />
                                     )}
                                     <span className="text-lg font-medium flex items-center">
-                                      {repo.isPrivate ? <FaLock className="mr-2 text-gray-400" /> : <FaEye className="mr-2 text-gray-400" />}
+                                      {repo.private ? <FaLock className="mr-2 text-gray-400" /> : <FaEye className="mr-2 text-gray-400" />}
                                       {repo.name}
                                     </span>
                                   </div>
@@ -198,16 +289,58 @@ export default function WorkspaceSelector({ isOpen, onClose, onSelectWorkspace }
                                     </div>
                                   </div>
                                 </div>
-                                
-                                <div className="text-sm text-gray-400">
-                                  Updated {formatDate(repo.updatedAt)}
-                                </div>
                               </div>
                             </div>
                           ))
                         ) : (
-                          <div className="text-center py-8 text-gray-400">
-                            No repositories match your search.
+                          <div className="text-center py-8">
+                            {isAuthenticated ? (
+                              <div className="space-y-4">
+                                <p className="text-gray-400">
+                                  No GitHub repositories found. You might need to grant additional permissions.
+                                </p>
+                                <button
+                                  onClick={triggerGitHubAuth}
+                                  disabled={isLoading}
+                                  className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center mx-auto"
+                                >
+                                  {isLoading ? (
+                                    <>
+                                      <span className="animate-spin mr-2">⏳</span>
+                                      Connecting...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <FaGithub className="mr-2" />
+                                      Reconnect to GitHub
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="space-y-4">
+                                <p className="text-gray-400">
+                                  Please sign in with GitHub to select a repository.
+                                </p>
+                                <button
+                                  onClick={triggerGitHubAuth}
+                                  disabled={isLoading}
+                                  className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center mx-auto"
+                                >
+                                  {isLoading ? (
+                                    <>
+                                      <span className="animate-spin mr-2">⏳</span>
+                                      Connecting...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <FaGithub className="mr-2" />
+                                      Connect to GitHub
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -230,9 +363,7 @@ export default function WorkspaceSelector({ isOpen, onClose, onSelectWorkspace }
                     </>
                   ) : (
                     <div className="text-center py-8 text-gray-400">
-                      {session?.provider === 'github' 
-                        ? "No GitHub repositories found. You might need to grant additional permissions."
-                        : "Please sign in with GitHub to select a repository."}
+                      {isAuthenticated ? "No GitHub repositories found. You might need to grant additional permissions." : "Please sign in with GitHub to select a repository."}
                     </div>
                   )}
                 </div>

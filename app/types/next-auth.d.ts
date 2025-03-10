@@ -4,13 +4,14 @@ import { DefaultSession } from "next-auth";
 interface GitHubRepo {
   id: number;
   name: string;
+  fullName: string;
   description: string | null;
   url: string;
   stars: number;
   forks: number;
   language: string | null;
-  isPrivate: boolean;
-  updatedAt: string;
+  private: boolean;
+  watchers: number;
 }
 
 declare module "next-auth" {
@@ -18,34 +19,32 @@ declare module "next-auth" {
    * Returned by `useSession`, `getSession` and received as a prop on the `SessionProvider` React Context
    */
   interface Session {
-    user: {
-      /** The user's id */
-      id: string;
-    } & DefaultSession["user"];
-    /** Access token for provider API calls */
+    user: DefaultSession["user"];
+    /** Access token for GitHub API calls */
     accessToken?: string;
-    /** Provider name (github, google, etc) */
+    /** User ID from GitHub */
+    userId?: string;
+    /** Username from GitHub */
+    username?: string;
+    /** Always "github" since we only use GitHub auth */
     provider?: string;
-    /** GitHub repositories when authenticated with GitHub */
+    /** GitHub repositories when authenticated */
     githubRepos?: GitHubRepo[];
-  }
-
-  interface User {
-    /** The user's id */
-    id: string;
   }
 }
 
 declare module "next-auth/jwt" {
   /** Returned by the `jwt` callback and `getToken`, when using JWT sessions */
   interface JWT {
-    /** The user's id */
-    id?: string;
-    /** Access token for provider API calls */
+    /** Access token for GitHub API calls */
     accessToken?: string;
-    /** Provider name (github, google, etc) */
+    /** User ID from GitHub */
+    userId?: string;
+    /** Username from GitHub */
+    username?: string;
+    /** Always "github" since we only use GitHub auth */
     provider?: string;
-    /** GitHub repositories when authenticated with GitHub */
+    /** GitHub repositories when authenticated */
     githubRepos?: GitHubRepo[];
   }
 } 

@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { Poppins } from 'next/font/google'
 import React from "react";
 import dynamic from 'next/dynamic';
-import AuthContext from './context/AuthContext';
+import AuthProvider from './context/AuthContext';
 import { WorkspaceProvider } from './context/WorkspaceContext';
 import { SidebarProvider } from './context/SidebarContext';
 
@@ -31,7 +31,7 @@ export default function RootLayout({children,}: {
       <body
         className={`${poppins.className} bg-gray-900 text-gray-100`}
       >
-        <AuthContext>
+        <AuthProvider>
           <WorkspaceProvider>
             <SidebarProvider>
               <ResponsiveLayout>
@@ -39,7 +39,7 @@ export default function RootLayout({children,}: {
               </ResponsiveLayout>
             </SidebarProvider>
           </WorkspaceProvider>
-        </AuthContext>
+        </AuthProvider>
       </body>
     </html>
   )

@@ -1,32 +1,63 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useState } from "react";
+import useAuth from "../hooks/useAuth";
+import { useState, useEffect } from "react";
 import { FaGithub, FaStar, FaCodeBranch, FaLock, FaEye, FaCode, FaCaretDown, FaCaretUp } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Helper to format dates
-const formatDate = (dateString: string) => {
-  const options: Intl.DateTimeFormatOptions = { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
-  };
-  return new Date(dateString).toLocaleDateString(undefined, options);
-};
+// Define GitHub repo type
+interface GitHubRepo {
+  id: number;
+  name: string;
+  description?: string;
+  url?: string;
+  html_url?: string;
+  private?: boolean;
+  language?: string;
+  stargazers_count?: number;
+  forks_count?: number;
+  watchers_count?: number;
+}
 
 export default function GitHubRepos() {
-  const { data: session } = useSession();
+  const { isAuthenticated, user } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [repos, setRepos] = useState<GitHubRepo[]>([]);
   
-  // Only show this component if we have GitHub repos
-  if (!session?.githubRepos || session.githubRepos.length === 0) {
-    return null;
-  }
+  // Fetch GitHub repos when component mounts
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchGitHubRepos();
+    }
+  }, [isAuthenticated]);
+  
+  // Function to fetch GitHub repositories
+  const fetchGitHubRepos = async () => {
+    try {
+      const token = localStorage.getItem('github-access-token');
+      if (!token) return;
+      
+      const response = await fetch('https://api.github.com/user/repos?sort=updated&per_page=100', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setRepos(data);
+      } else {
+        console.error('Failed to fetch GitHub repos');
+      }
+    } catch (error) {
+      console.error('Error fetching GitHub repos:', error);
+    }
+  };
   
   // Filter repos based on search term
-  const filteredRepos = session.githubRepos.filter(repo => 
+  const filteredRepos = repos.filter(repo => 
     repo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (repo.description && repo.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -39,7 +70,7 @@ export default function GitHubRepos() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold flex items-center">
           <FaGithub className="mr-2" /> 
-          Your GitHub Repositories ({session.githubRepos.length})
+          Your GitHub Repositories ({repos.length})
         </h2>
         
         <button 
@@ -84,7 +115,7 @@ export default function GitHubRepos() {
                       rel="noopener noreferrer"
                       className="text-blue-400 hover:text-blue-300 text-lg font-medium flex items-center"
                     >
-                      {repo.isPrivate ? <FaLock className="mr-2" /> : <FaEye className="mr-2" />}
+                      {repo.private ? <FaLock className="mr-2" /> : <FaEye className="mr-2" />}
                       {repo.name}
                     </a>
                     
@@ -102,18 +133,19 @@ export default function GitHubRepos() {
                       
                       <div className="flex items-center mr-4">
                         <FaStar className="mr-1" />
-                        {repo.stars}
+                        {repo.stargazers_count}
+                      </div>
+                      
+                      <div className="flex items-center mr-4">
+                        <FaCodeBranch className="mr-1" />
+                        {repo.forks_count}
                       </div>
                       
                       <div className="flex items-center">
-                        <FaCodeBranch className="mr-1" />
-                        {repo.forks}
+                        <FaEye className="mr-1" />
+                        {repo.watchers_count}
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="text-sm text-gray-400">
-                    Updated {formatDate(repo.updatedAt)}
                   </div>
                 </div>
               </motion.div>

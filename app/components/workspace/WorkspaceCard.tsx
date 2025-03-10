@@ -1,25 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { useWorkspace, Workspace } from "@/app/context/WorkspaceContext";
+import { useAuth } from "../../context/AuthContext";
 import { 
   FaGithub, FaFolder, FaArrowRight, FaSearch, FaCheck, 
   FaStar, FaCodeBranch, FaLock, FaEye, FaCode, FaTimes,
   FaSpinner, FaFolderOpen, FaUpload, FaInfoCircle
 } from "react-icons/fa";
 import { useDropzone, FileWithPath } from "react-dropzone";
-
-// Helper to format dates
-const formatDate = (dateString: string) => {
-  const options: Intl.DateTimeFormatOptions = { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
-  };
-  return new Date(dateString).toLocaleDateString(undefined, options);
-};
 
 // Animation variants for different elements
 const cardVariants: Variants = {
@@ -66,19 +56,61 @@ interface WorkspaceCardProps {
 }
 
 export default function WorkspaceCard({ onClose }: WorkspaceCardProps) {
-  const { data: session } = useSession();
+  const { isAuthenticated } = useAuth();
   const { setWorkspace } = useWorkspace();
-  const [selectedTab, setSelectedTab] = useState<"github" | "local">(
-    session?.provider === "github" ? "github" : "local"
-  );
+  const [selectedTab, setSelectedTab] = useState<"github" | "local">("github");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRepoId, setSelectedRepoId] = useState<number | null>(null);
-  const [localFolderPath, setLocalFolderPath] = useState("");
   const [localFolderName, setLocalFolderName] = useState("");
+  const [localFolderPath, setLocalFolderPath] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [githubRepos, setGithubRepos] = useState<any[]>([]);
+  
+  // Fetch GitHub repositories when component mounts
+  useEffect(() => {
+    if (isAuthenticated && selectedTab === "github") {
+      fetchGitHubRepos();
+    }
+  }, [isAuthenticated, selectedTab]);
+  
+  // Function to fetch GitHub repositories
+  const fetchGitHubRepos = async () => {
+    try {
+      setIsLoading(true);
+      
+      const token = localStorage.getItem('github-access-token');
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+      
+      const response = await fetch('https://api.github.com/user/repos?sort=updated&per_page=100', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const repos = await response.json();
+        setGithubRepos(repos);
+        
+        // Auto-select first repo if there's only one
+        if (repos.length === 1) {
+          setSelectedRepoId(repos[0].id);
+        }
+      } else {
+        console.error('[WORKSPACE] Failed to fetch GitHub repos');
+      }
+    } catch (error) {
+      console.error('[WORKSPACE] Error fetching GitHub repos:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   // Filter repos based on search term
-  const filteredRepos = session?.githubRepos?.filter(repo => 
+  const filteredRepos = githubRepos?.filter((repo: any) => 
     repo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (repo.description && repo.description.toLowerCase().includes(searchTerm.toLowerCase()))
   ) || [];
@@ -90,24 +122,21 @@ export default function WorkspaceCard({ onClose }: WorkspaceCardProps) {
   
   // Handle form submission for GitHub repo
   const handleGithubSubmit = () => {
-    if (!selectedRepoId || !session?.githubRepos) return;
+    if (!selectedRepoId || !githubRepos?.length) return;
     
     setIsLoading(true);
-    const selectedRepo = session.githubRepos.find(repo => repo.id === selectedRepoId);
+    const selectedRepo = githubRepos.find((repo: any) => repo.id === selectedRepoId);
     
     if (selectedRepo) {
       setWorkspace({
         type: "github",
         id: selectedRepo.id,
         name: selectedRepo.name,
-        url: selectedRepo.url,
+        url: selectedRepo.html_url,
         description: selectedRepo.description || undefined
       });
       
-      setTimeout(() => {
-        setIsLoading(false);
-        onClose();
-      }, 500);
+      onClose();
     } else {
       setIsLoading(false);
     }
@@ -225,7 +254,7 @@ export default function WorkspaceCard({ onClose }: WorkspaceCardProps) {
             selectedTab === "github" ? "border-b-2 border-blue-500 text-blue-400" : "text-gray-400"
           }`}
           onClick={() => setSelectedTab("github")}
-          disabled={!session?.githubRepos?.length}
+          disabled={!githubRepos?.length}
         >
           <FaGithub className="mr-2" />
           GitHub Repositories
@@ -254,7 +283,7 @@ export default function WorkspaceCard({ onClose }: WorkspaceCardProps) {
             animate="animate"
             exit="exit"
           >
-            {session?.githubRepos?.length ? (
+            {githubRepos?.length ? (
               <>
                 {/* Search */}
                 <div className="relative mb-4">
@@ -293,7 +322,7 @@ export default function WorkspaceCard({ onClose }: WorkspaceCardProps) {
                                 <FaCheck className="text-blue-400 mr-2" />
                               )}
                               <span className="font-medium flex items-center text-white">
-                                {repo.isPrivate ? <FaLock className="mr-2 text-xs text-gray-400" /> : <FaEye className="mr-2 text-xs text-gray-400" />}
+                                {repo.private ? <FaLock className="mr-2 text-xs text-gray-400" /> : <FaEye className="mr-2 text-xs text-gray-400" />}
                                 {repo.name}
                               </span>
                             </div>
@@ -323,7 +352,10 @@ export default function WorkspaceCard({ onClose }: WorkspaceCardProps) {
                           </div>
                           
                           <div className="text-xs text-gray-400">
-                            {formatDate(repo.updatedAt)}
+                            <div className="flex items-center">
+                              <FaEye className="mr-1" />
+                              {repo.watchers} watchers
+                            </div>
                           </div>
                         </div>
                       </motion.div>
@@ -356,7 +388,7 @@ export default function WorkspaceCard({ onClose }: WorkspaceCardProps) {
               </>
             ) : (
               <div className="text-center py-8 text-gray-400">
-                {session?.provider === 'github' 
+                {isAuthenticated 
                   ? "No GitHub repositories found. You may need to grant additional permissions."
                   : "Please sign in with GitHub to select a repository."}
               </div>
