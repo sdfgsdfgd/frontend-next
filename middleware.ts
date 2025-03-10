@@ -44,6 +44,17 @@ export function middleware(request: NextRequest) {
         // Create a modified redirect that our callback page can handle
         const fixedUrl = new URL(`${url.origin}/api/auth/callback/github`);
         
+        // Log the URL and origin for debugging
+        console.log('Callback URL details:', {
+          originalUrl: request.url,
+          origin: url.origin,
+          fixedUrl: fixedUrl.toString(),
+          env: {
+            AUTH_PROXY_URL: process.env.AUTH_PROXY_URL,
+            NEXT_PUBLIC_AUTH_URL: process.env.NEXT_PUBLIC_AUTH_URL
+          }
+        });
+        
         // Keep all original parameters
         searchParams.forEach((value, key) => {
           if (key !== 'done') {

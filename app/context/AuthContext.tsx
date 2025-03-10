@@ -212,13 +212,20 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     localStorage.setItem('github-auth-state', state);
     
     // Construct the GitHub OAuth URL
-    const clientId = 'Ov23li0D2JHTeDDBOQ1i'; // Hardcode client ID to ensure it's set
-    const redirectUri = encodeURIComponent(window.location.origin + '/api/auth/callback/github');
+    const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || 'Ov23li0D2JHTeDDBOQ1i';
+    
+    // Use the environment variable for the redirect URI to maintain consistency with token exchange
+    const baseUrl = process.env.NEXT_PUBLIC_AUTH_URL || window.location.origin;
+    const redirectUri = encodeURIComponent(`${baseUrl}/api/auth/callback/github`);
+    
     const scope = encodeURIComponent('read:user user:email repo');
     
     const githubUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
     
-    console.log('[AUTH] Redirecting to GitHub for authentication');
+    console.log('[AUTH] Redirecting to GitHub for authentication', {
+      redirectUri: decodeURIComponent(redirectUri),
+      baseUrl
+    });
     
     // Set flag that we're in the process of auth
     localStorage.setItem('github-auth-in-progress', 'true');

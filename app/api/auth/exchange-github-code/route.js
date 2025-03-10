@@ -55,7 +55,9 @@ export async function POST(request) {
       state: state ? 'present' : 'missing',
       clientId: process.env.GITHUB_CLIENT_ID ? process.env.GITHUB_CLIENT_ID.substring(0, 5) + '...' : 'MISSING',
       clientSecret: process.env.GITHUB_CLIENT_SECRET ? 'present' : 'missing',
-      redirectUri
+      redirectUri,
+      AUTH_PROXY_URL: process.env.AUTH_PROXY_URL,
+      NEXT_PUBLIC_AUTH_URL: process.env.NEXT_PUBLIC_AUTH_URL
     });
     
     // Make the token exchange request to GitHub

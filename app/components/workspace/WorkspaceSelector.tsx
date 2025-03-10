@@ -95,12 +95,19 @@ export default function WorkspaceSelector({ isOpen, onClose, onSelectWorkspace }
       
       // Construct the GitHub OAuth URL
       const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || '';
-      const redirectUri = encodeURIComponent(window.location.origin + '/api/auth/callback/github');
+      
+      // Use the environment variable for the redirect URI to maintain consistency with token exchange
+      const baseUrl = process.env.NEXT_PUBLIC_AUTH_URL || window.location.origin;
+      const redirectUri = encodeURIComponent(`${baseUrl}/api/auth/callback/github`);
+      
       const scope = encodeURIComponent('read:user user:email repo');
       
       const githubUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
       
-      console.log('[WORKSPACE] Redirecting to GitHub for authentication');
+      console.log('[WORKSPACE] Redirecting to GitHub for authentication', {
+        redirectUri: decodeURIComponent(redirectUri),
+        baseUrl
+      });
       
       // Redirect to GitHub
       window.location.href = githubUrl;
