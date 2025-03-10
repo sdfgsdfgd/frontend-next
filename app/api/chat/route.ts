@@ -8,7 +8,8 @@ export async function POST(req: NextRequest) {
 
         const body = await req.json();
 
-        const response = await fetch('https://sdfgsdfg.net/test', {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sdfgsdfg.net';
+        const response = await fetch(`${backendUrl}/test`, {
             method: 'POST',
             headers,
             body: JSON.stringify(body),

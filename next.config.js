@@ -22,6 +22,15 @@ module.exports = {
   
   // Ensure environment variables are passed correctly
   env: {
+    // Auth URLs
     AUTH_URL: process.env.NEXT_PUBLIC_AUTH_URL || 'http://localhost',
+    BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost',
+    
+    // WebSocket URL
+    WS_URL: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:80/ws',
+    
+    // Debug settings
+    DEBUG: process.env.DEBUG || 'false',
+    VERBOSE_LOGGING: process.env.VERBOSE_LOGGING || 'false',
   },
 };

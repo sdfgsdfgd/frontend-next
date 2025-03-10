@@ -57,7 +57,7 @@ export default function AnimatedSidebar({
 
               {/* Connection Status Indicator */}
               <div className="mt-auto mb-4 mx-4 p-2 z-50 rounded-md bg-gray-800/70">
-                <ConnectionStatus url="ws://localhost:80/ws" />
+                <ConnectionStatus url={process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:80/ws"} />
               </div>
             </div>
           </>

@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "export": "next export",
-    "lint": "next lint"
+    "lint": "next lint",
+    "build:dev": "env-cmd -f .env.development next build",
+    "build:prod": "env-cmd -f .env.production next build",
+    "start:dev": "env-cmd -f .env.development next start",
+    "start:prod": "env-cmd -f .env.production next start"
   },
   "dependencies": {
     "@emotion/react": "^11.11.1",
@@ -33,6 +37,7 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
+    "env-cmd": "^10.1.0",
     "eslint": "8.54.0",
     "eslint-config-next": "14.0.3",
     "postcss": "^8",
