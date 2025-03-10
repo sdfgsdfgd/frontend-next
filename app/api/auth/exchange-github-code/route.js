@@ -43,7 +43,7 @@ export async function POST(request) {
     params.append('code', code);
     
     // Add redirect_uri (very important)
-    const redirectUri = `${process.env.NEXTAUTH_URL}/api/auth/callback/github`;
+    const redirectUri = `${process.env.AUTH_PROXY_URL}/api/auth/callback/github`;
     params.append('redirect_uri', redirectUri);
     
     if (state) {
@@ -125,7 +125,7 @@ export async function POST(request) {
       headers: {
         'Authorization': `Bearer ${tokenData.access_token}`,
         'Accept': 'application/json',
-        'User-Agent': 'NextAuth.js'
+        'User-Agent': 'GitHub-OAuth-App'
       }
     });
     

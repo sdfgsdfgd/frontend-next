@@ -1,4 +1,4 @@
-// Next.js 13 App Router specific middleware for auth
+// GitHub OAuth callback middleware
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -19,7 +19,6 @@ export function middleware(request: NextRequest) {
       
       // Log all cookies for debugging
       console.log('Callback cookies:', {
-        hasState: request.cookies.has('next-auth.state'),
         allCookies: [...request.cookies.getAll()].map(c => c.name),
         authParams: {
           code: searchParams.has('code') ? 'present' : 'missing',
@@ -35,8 +34,7 @@ export function middleware(request: NextRequest) {
         return NextResponse.next();
       }
       
-      // If we have a code but no state cookie (common issue in Next.js 13), 
-      // handle with our workaround
+      // If we have a code, handle the GitHub callback
       if (searchParams.has('code')) {
         console.log('Processing GitHub OAuth callback');
         
@@ -59,37 +57,18 @@ export function middleware(request: NextRequest) {
         // Create a response with the state cookie
         const response = NextResponse.redirect(fixedUrl);
         
-        // If we have a state parameter, manually set the state cookie
+        // If we have a state parameter, manually set the GitHub state cookie
         if (stateParam) {
-          response.cookies.set('next-auth.state', stateParam, {
+          response.cookies.set('github-auth-state', stateParam, {
             path: '/',
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             maxAge: 900 // 15 minutes
           });
-          console.log('Added state cookie for NextAuth:', stateParam);
+          console.log('Added state cookie for GitHub OAuth:', stateParam);
         }
         
         return response;
-      }
-      
-      // For any other callback requests, just pass them through
-      return NextResponse.next();
-    }
-    
-    // Special handling for auth signin endpoints
-    if (path.startsWith('/api/auth/signin')) {
-      console.log('Middleware handling auth signin request', {
-        url: request.url,
-        method: request.method
-      });
-      
-      // For POST requests to signin endpoints, we need to ensure correct handling
-      if (request.method === 'POST') {
-        console.log('Auth signin POST request detected');
-        
-        // Let the request through, but log it for debugging
-        return NextResponse.next();
       }
     }
     
@@ -101,10 +80,9 @@ export function middleware(request: NextRequest) {
   }
 }
 
-// Only run middleware on auth-related routes
+// Only run middleware on GitHub callback routes
 export const config = {
   matcher: [
     '/api/auth/callback/:path*',
-    '/api/auth/signin/:path*',
   ],
 }; 

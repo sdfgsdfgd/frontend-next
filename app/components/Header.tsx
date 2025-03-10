@@ -7,12 +7,6 @@ import { useSidebar } from "../context/SidebarContext";
 import { ModalControlContext } from "../context/ModalContext";
 import { FaGithub, FaUser } from "react-icons/fa";
 
-// Helper to check if user likely has a session based on cookies
-const hasLikelySession = () => {
-  if (typeof window === 'undefined') return false;
-  return document.cookie.includes('next-auth.session-token');
-};
-
 export default function Header() {
   const { isAuthenticated, user } = useAuth();
   const { workspace, isWorkspaceSelected } = useWorkspace();
