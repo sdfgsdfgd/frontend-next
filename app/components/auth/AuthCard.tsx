@@ -43,7 +43,15 @@ export default function AuthCard({ onClose }: AuthCardProps) {
   const isLoading = authLoading || buttonLoading;
   
   return (
-    <div className="bg-gray-800 rounded-xl shadow-lg p-8 w-full max-w-md mx-auto">
+    <div className="bg-gray-800 rounded-xl shadow-lg p-8 w-full max-w-md mx-auto relative">
+      <button
+        onClick={onClose}
+        className="absolute top-3 right-3 text-gray-500 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors"
+        aria-label="Close"
+      >
+        <FaSignOutAlt className="transform rotate-180" />
+      </button>
+      
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold text-white mb-2">
           {isAuthenticated ? 'Welcome Back!' : 'Sign In to Continue'}
@@ -102,15 +110,6 @@ export default function AuthCard({ onClose }: AuthCardProps) {
           {authError}
         </div>
       )}
-      
-      <div className="mt-6 text-center">
-        <button
-          onClick={onClose}
-          className="text-gray-500 hover:text-white text-sm transition"
-        >
-          Close
-        </button>
-      </div>
     </div>
   );
 } 

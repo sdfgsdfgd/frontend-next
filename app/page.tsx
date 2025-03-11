@@ -152,7 +152,7 @@ export default function Home() {
           </div>
           
           {/* Session debug panel */}
-          <SessionDebug />
+          {/*<SessionDebug />*/}
         </div>
       </ContentSyncEffect>
     </ModalControlContext.Provider>

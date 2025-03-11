@@ -23,9 +23,9 @@ export default function Header() {
   
   return (
     <header className="bg-gray-800 border-b border-gray-700 shadow-md sticky top-0 z-50">
-      <div className="px-4 h-16 flex items-center justify-between">
+      <div className="grid grid-cols-12 h-16 items-center">
         {/* Left side with logo and workspace info */}
-        <div className="flex items-center space-x-2">
+        <div className="col-span-3 flex items-center space-x-2 pl-4">
           <button 
             onClick={toggleSidebar}
             className="p-2 rounded-full hover:bg-gray-700 transition mr-2"
@@ -43,8 +43,11 @@ export default function Header() {
           </div>
         </div>
         
+        {/* Middle area - can be empty or contain other elements */}
+        <div className="col-span-5"></div>
+        
         {/* Right side with auth and workspace controls */}
-        <div className="flex items-center space-x-3">
+        <div className="col-span-4 flex items-center justify-end space-x-3 pr-16">
           {/* Workspace indicator */}
           {isWorkspaceSelected && workspace && (
             <div className="hidden md:flex items-center px-3 py-1.5 bg-gray-700 rounded-full">
@@ -66,9 +69,17 @@ export default function Header() {
             >
               {isAuthenticated ? (
                 <div className="flex items-center">
-                  <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center mr-2">
-                    {user?.login?.charAt(0) || "U"}
-                  </div>
+                  {user?.avatar_url ? (
+                    <img 
+                      src={user.avatar_url} 
+                      alt={user?.login || "User"} 
+                      className="w-6 h-6 rounded-full mr-2 object-cover border border-gray-600"
+                    />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center mr-2">
+                      {user?.login?.charAt(0) || "U"}
+                    </div>
+                  )}
                   <span className="text-sm truncate max-w-[100px]">
                     {user?.name || user?.login || "User"}
                   </span>

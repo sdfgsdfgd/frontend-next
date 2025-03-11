@@ -214,6 +214,13 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     // Construct the GitHub OAuth URL
     const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || 'Ov23li0D2JHTeDDBOQ1i';
     
+    // Log which client ID is being used
+    console.log('[AUTH] Using GitHub client ID:', {
+      clientId: clientId.substring(0, 8) + '...',
+      fromEnv: !!process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID,
+      envPrefix: process.env.NEXT_PUBLIC_AUTH_URL // Log another env var to check if env vars are loading
+    });
+    
     // Use the environment variable for the redirect URI to maintain consistency with token exchange
     const baseUrl = process.env.NEXT_PUBLIC_AUTH_URL || window.location.origin;
     const redirectUri = encodeURIComponent(`${baseUrl}/api/auth/callback/github`);
