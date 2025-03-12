@@ -1,17 +1,16 @@
 "use client";
 
 import React from 'react';
-import CanvasSidebarEffect from './CanvasSidebarEffect';
 import dynamic from 'next/dynamic';
 import { useSidebar } from '@/app/context/SidebarContext';
 
 // Dynamic import for GlassSidebar to avoid SSR issues with Three.js
-const GlassSidebar = dynamic(() => import('./GlassSidebar'), { ssr: false });
+const GlassSidebar = dynamic(() => import('./GlassSidebar'), {ssr: false});
 
 // Import ConnectionStatus component with dynamic import to avoid hydration errors
 const ConnectionStatus = dynamic(
   () => import('../ConnectionStatus'),
-  { ssr: false }
+  {ssr: false}
 );
 
 interface AnimatedSidebarProps {
@@ -19,22 +18,15 @@ interface AnimatedSidebarProps {
   width?: number;
 }
 
-export default function AnimatedSidebar({ 
-  children,
-  width = 256
-}: AnimatedSidebarProps) {
+export default function AnimatedSidebar({
+                                          children,
+                                          width = 256
+                                        }: AnimatedSidebarProps) {
   // Use sidebar context instead of local state
-  const { isOpen, toggleSidebar } = useSidebar();
-  
+  const {isOpen, toggleSidebar} = useSidebar();
+
   return (
     <>
-      {/* Canvas effect layer */}
-      <CanvasSidebarEffect 
-        isOpen={isOpen} 
-        toggleSidebar={toggleSidebar} 
-        width={width} 
-      />
-      
       {/* Glass sidebar with content */}
       <GlassSidebar isOpen={isOpen} width={width}>
         {children || (
@@ -57,7 +49,7 @@ export default function AnimatedSidebar({
 
               {/* Connection Status Indicator */}
               <div className="mt-auto mb-4 mx-4 p-2 z-50 rounded-md bg-gray-800/70">
-                <ConnectionStatus url={process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:80/ws"} />
+                <ConnectionStatus url={process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:80/ws"}/>
               </div>
             </div>
           </>
