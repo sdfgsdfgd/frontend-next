@@ -8,6 +8,7 @@ import { ModalControlContext } from "../context/ModalContext";
 import { FaGithub } from "react-icons/fa";
 import WorkspaceDisplay from "@/app/components/workspace/WorkspaceDisplay";
 import { Cinzel, Playfair_Display } from 'next/font/google';
+import { motion } from "framer-motion";
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -36,8 +37,14 @@ export default function Header() {
   }, [isOpen]);
 
   return (
-    <header className="bg-gray-800 border-b border-gray-700 shadow-md sticky top-0 z-50">
-      <div className="grid grid-cols-12 h-16 items-center">
+    <header className="relative border-b border-gray-700/50 shadow-md sticky top-0 z-50 overflow-hidden">
+      {/* Background with vertical transparency gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/95 via-[#050A15]/90 to-[#050A15]/60 backdrop-blur-sm"></div>
+
+      {/* Subtle edge glow */}
+      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
+
+      <div className="grid grid-cols-12 h-20 items-center relative z-10">
         {/* Left side with logo and workspace info */}
         <div className="col-span-3 flex items-center space-x-2 pl-4">
           <div className={`
@@ -67,38 +74,84 @@ export default function Header() {
         <div className="col-span-4 flex items-center justify-end space-x-3 pr-16">
           {/* Auth button */}
           <div>
-            <button
+            <motion.button
               onClick={() => setAuthModalOpen(true)}
-              className={`px-4 py-2 rounded-lg flex items-center ${
-                isAuthenticated
-                  ? "bg-gray-700 hover:bg-gray-600"
-                  : "bg-blue-600 hover:bg-blue-500"
-              } transition-all duration-300 ease-in-out`}
+              className={`relative overflow-hidden rounded-lg cursor-pointer group my-3.5`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              {isAuthenticated ? (
-                <div className="flex items-center">
-                  {user?.avatar_url ? (
-                    <img
-                      src={user.avatar_url}
-                      alt={user?.login || "User"}
-                      className="w-6 h-6 rounded-full mr-2 object-cover border border-gray-600"
-                    />
-                  ) : (
-                    <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center mr-2">
-                      {user?.login?.charAt(0) || "U"}
+              {/* Background gradient blur effect */}
+              <div className={`absolute inset-0 backdrop-blur-md border border-gray-800/40 rounded-lg
+                      group-hover:border-gray-600/60 group-hover:shadow-lg group-hover:shadow-black/30
+                      transition-all duration-300 ${
+                        isAuthenticated 
+                          ? "bg-gradient-to-r from-black/40 via-gray-900/50 to-black/40 group-hover:from-black/50 group-hover:via-gray-900/60 group-hover:to-black/50" 
+                          : "bg-gradient-to-r from-blue-900/40 via-blue-800/50 to-blue-900/40 group-hover:from-blue-900/50 group-hover:via-blue-800/60 group-hover:to-blue-900/50"
+                      }`}>
+              </div>
+
+              {/* Ambient glow effect */}
+              <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg ${
+                isAuthenticated 
+                  ? "bg-blue-500/5" 
+                  : "bg-blue-500/10"
+              }`}></div>
+
+              {/* Shimmer effect overlay */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent
+                            translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000
+                            ease-in-out opacity-0 group-hover:opacity-100">
+              </div>
+
+              {/* Subtle edge highlight */}
+              <div className={`absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500
+                              ${isAuthenticated
+                                ? "bg-gradient-to-r from-blue-500/10 via-purple-500/5 to-pink-500/10"
+                                : "bg-gradient-to-r from-blue-500/15 via-indigo-500/10 to-blue-300/15"
+                              }`}>
+              </div>
+
+              {/* Content */}
+              <div className="relative z-10 py-2.5 px-4 flex items-center">
+                {isAuthenticated ? (
+                  <div className="flex items-center">
+                    {user?.avatar_url ? (
+                      <div className="p-0.5 rounded-full bg-gray-900/60 backdrop-blur-sm flex-shrink-0
+                                    border border-gray-700/30 group-hover:border-blue-500/50
+                                    transition-all duration-300 mr-2">
+                        <img
+                          src={user.avatar_url}
+                          alt={user?.login || "User"}
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-blue-800/60 backdrop-blur-sm flex items-center justify-center mr-2
+                                     border border-blue-700/50 group-hover:border-blue-500/80 transition-all duration-300
+                                     group-hover:bg-blue-700/70">
+                        {user?.login?.charAt(0) || "U"}
+                      </div>
+                    )}
+                    <span className="text-sm truncate max-w-[100px] text-gray-200 group-hover:text-white transition-colors">
+                      {user?.name || user?.login || "User"}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center">
+                    <div className="p-1.5 rounded-full bg-blue-900/60 backdrop-blur-sm mr-2 flex-shrink-0
+                                  border border-blue-700/30 group-hover:border-blue-500/70
+                                  transition-all duration-300 group-hover:bg-blue-800/80">
+                      <FaGithub className="text-blue-300 group-hover:text-blue-200" size={14} />
                     </div>
-                  )}
-                  <span className="text-sm truncate max-w-[100px]">
-                    {user?.name || user?.login || "User"}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <FaGithub className="mr-2"/>
-                  <span>Sign In</span>
-                </div>
-              )}
-            </button>
+                    <span className="text-sm text-gray-200 group-hover:text-white transition-colors">Sign In</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Subtle decorative element - adjusted position */}
+              <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-gradient-to-r from-blue-500/30 to-purple-500/30
+                           rounded-full blur-xl opacity-0 group-hover:opacity-25 transition-opacity duration-700"></div>
+            </motion.button>
           </div>
         </div>
       </div>
