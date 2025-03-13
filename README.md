@@ -21,7 +21,7 @@
 
 -  **VSCode Extension**
 -  **Compose Multiplatform** _(Desktop App)_
--  **Compose MP WASM Modules** _(Desktop & Web)_
+-  **Compose MP WASM Modules** _(Desktop-to-Web + web-to-Desktop link)_
 -  **Mobile & Web Emulator Sandboxes** _(maestro & undetectedChromedriver w/ voice cmds)_
 -  **WebSockets → gRPC upgrade**
 
