@@ -56,7 +56,7 @@ interface WorkspaceCardProps {
 }
 
 export default function WorkspaceCard({ onClose }: WorkspaceCardProps) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, token } = useAuth();
   const { setWorkspace } = useWorkspace();
   const [selectedTab, setSelectedTab] = useState<"github" | "local">("github");
   const [searchTerm, setSearchTerm] = useState("");
@@ -68,17 +68,16 @@ export default function WorkspaceCard({ onClose }: WorkspaceCardProps) {
   
   // Fetch GitHub repositories when component mounts
   useEffect(() => {
-    if (isAuthenticated && selectedTab === "github") {
+    if (isAuthenticated && token && selectedTab === "github") {
       fetchGitHubRepos();
     }
-  }, [isAuthenticated, selectedTab]);
+  }, [isAuthenticated, token, selectedTab]);
   
   // Function to fetch GitHub repositories
   const fetchGitHubRepos = async () => {
     try {
       setIsLoading(true);
       
-      const token = localStorage.getItem('github-access-token');
       if (!token) {
         setIsLoading(false);
         return;

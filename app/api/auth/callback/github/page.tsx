@@ -111,8 +111,13 @@ export default function GitHubCallbackPage() {
         // Mark authentication as completed
         localStorage.setItem('github-auth-completed', 'true');
         
-        // Trigger "storage" event for other tabs
+        // Trigger events to notify other parts of the app
         try {
+          // Dispatch both standard storage event (for other tabs) and custom event (for current tab)
+          window.dispatchEvent(new Event('storage-update'));
+          
+          // Also try to trigger a standard storage event for other tabs
+          // Note: manually dispatched storage events might not work in all browsers
           window.dispatchEvent(new Event('storage'));
         } catch (e) {
           console.error('[GITHUB-CALLBACK] Error dispatching storage event:', e);

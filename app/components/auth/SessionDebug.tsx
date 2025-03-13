@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import useAuth from "../../hooks/useAuth";
+import { useAuth } from "../../context/AuthContext";
 
 export default function SessionDebug() {
   const { isAuthenticated, user, token, error } = useAuth();
@@ -38,7 +38,7 @@ export default function SessionDebug() {
       <div>
         {typeof window !== 'undefined' && (
           <div>
-            <div><span className="text-gray-400">github-access-token:</span> {localStorage.getItem('github-access-token') ? 'Present' : 'Missing'}</div>
+            <div><span className="text-gray-400">github-access-token:</span> {localStorage.getItem('github-access-token') ? 'Present' : 'Missing'} {token ? '(matches context)' : '(not in context)'}</div>
             <div><span className="text-gray-400">github-auth-completed:</span> {localStorage.getItem('github-auth-completed')}</div>
             <div><span className="text-gray-400">github-auth-timestamp:</span> {localStorage.getItem('github-auth-timestamp')}</div>
           </div>

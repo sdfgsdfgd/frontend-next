@@ -1,6 +1,6 @@
 "use client";
 
-import useAuth from "../hooks/useAuth";
+import { useAuth } from "../context/AuthContext";
 import { useState, useEffect } from "react";
 import { FaGithub, FaStar, FaCodeBranch, FaLock, FaEye, FaCode, FaCaretDown, FaCaretUp } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,22 +20,21 @@ interface GitHubRepo {
 }
 
 export default function GitHubRepos() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, token } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [repos, setRepos] = useState<GitHubRepo[]>([]);
   
   // Fetch GitHub repos when component mounts
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && token) {
       fetchGitHubRepos();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, token]);
   
   // Function to fetch GitHub repositories
   const fetchGitHubRepos = async () => {
     try {
-      const token = localStorage.getItem('github-access-token');
       if (!token) return;
       
       const response = await fetch('https://api.github.com/user/repos?sort=updated&per_page=100', {

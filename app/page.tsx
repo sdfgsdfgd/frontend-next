@@ -13,7 +13,7 @@ import ContentSyncEffect from "./components/ui/ContentSyncEffect";
 import SessionDebug from "./components/auth/SessionDebug";
 
 export default function Home() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, token } = useAuth();
   const { workspace, isWorkspaceSelected, clearWorkspace, setWorkspace } = useWorkspace();
   
   // State for controlling modals
@@ -25,9 +25,10 @@ export default function Home() {
     console.log('[HOME] Auth state:', {
       isAuthenticated,
       isLoading,
+      hasToken: !!token, 
       hasWorkspace: isWorkspaceSelected
     });
-  }, [isAuthenticated, isLoading, isWorkspaceSelected]);
+  }, [isAuthenticated, isLoading, token, isWorkspaceSelected]);
   
   // Try to restore workspace from localStorage if necessary
   useEffect(() => {
@@ -35,14 +36,16 @@ export default function Home() {
       // Check if we have completed GitHub auth recently
       const authCompleted = localStorage.getItem('github-auth-completed');
       
-      if (authCompleted === 'true') {
-        console.log('[HOME] Authentication completed, checking for workspace');
-        localStorage.removeItem('github-auth-completed');
+      if (authCompleted === 'true' || (isAuthenticated && token)) {
+        console.log('[HOME] Authentication confirmed, checking for workspace');
         
-        // Try to get GitHub repos from localStorage or fetch them
+        if (authCompleted === 'true') {
+          localStorage.removeItem('github-auth-completed');
+        }
+        
+        // Try to get GitHub repos using the token from auth context
         const fetchWorkspaces = async () => {
           try {
-            const token = localStorage.getItem('github-access-token');
             if (!token) return;
             
             const response = await fetch('https://api.github.com/user/repos?sort=updated&per_page=100', {
@@ -80,7 +83,7 @@ export default function Home() {
         fetchWorkspaces();
       }
     }
-  }, [isAuthenticated, isWorkspaceSelected, setWorkspace]);
+  }, [isAuthenticated, isWorkspaceSelected, token, setWorkspace]);
   
   // Determine what overlay to show based on auth state and workspace selection
   useEffect(() => {

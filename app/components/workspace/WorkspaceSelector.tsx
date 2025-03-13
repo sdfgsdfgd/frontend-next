@@ -29,7 +29,7 @@ interface WorkspaceSelectorProps {
 }
 
 export default function WorkspaceSelector({ isOpen, onClose, onSelectWorkspace }: WorkspaceSelectorProps) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, token } = useAuth();
   const [tab, setTab] = useState<"github" | "local">(isAuthenticated ? "github" : "local");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRepoId, setSelectedRepoId] = useState<number | null>(null);
@@ -40,17 +40,16 @@ export default function WorkspaceSelector({ isOpen, onClose, onSelectWorkspace }
   
   // Fetch GitHub repositories when component mounts
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && token) {
       fetchGitHubRepos();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, token]);
   
   // Fetch GitHub repositories
   const fetchGitHubRepos = async () => {
     try {
       setIsLoading(true);
       
-      const token = localStorage.getItem('github-access-token');
       if (!token) return;
       
       const response = await fetch('https://api.github.com/user/repos?sort=updated&per_page=100', {

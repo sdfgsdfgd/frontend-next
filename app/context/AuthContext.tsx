@@ -9,7 +9,7 @@ const AUTH_USER_KEY = 'github-user';
 const AUTH_COMPLETED_KEY = 'github-auth-completed';
 
 // Define user and auth state types
-interface GitHubUser {
+export interface GitHubUser {
   id: string | number;
   login: string;
   name?: string;
@@ -17,15 +17,23 @@ interface GitHubUser {
   avatar_url?: string;
 }
 
-interface AuthState {
+export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
+  isValidating?: boolean;
   user: GitHubUser | null;
   token: string | null;
   error: string | null;
   login: () => void;
   logout: () => void;
 }
+
+export type AuthTokenData = {
+  access_token: string;
+  token_type: string;
+  scope: string;
+  user?: GitHubUser;
+};
 
 // Create context
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -45,10 +53,28 @@ interface AuthProviderProps {
 export default function AuthProvider({ children }: AuthProviderProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isValidating, setIsValidating] = useState(false);
   const [user, setUser] = useState<GitHubUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  
+  // Function to handle authentication errors gracefully
+  const handleAuthError = (errorMessage: string, clearData: boolean = true) => {
+    console.error(`[AUTH] ${errorMessage}`);
+    setError(errorMessage);
+    
+    if (clearData) {
+      // Clear localStorage data
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(AUTH_USER_KEY);
+      
+      // Clear state
+      setToken(null);
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+  };
   
   // Initialize auth state from localStorage
   useEffect(() => {
@@ -66,7 +92,11 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         if (storedToken) {
           console.log('[AUTH] Found token in localStorage');
           
-          // Get user from localStorage first for quick display
+          // Set token and authentication state immediately
+          setToken(storedToken);
+          setIsAuthenticated(true);
+          
+          // Get user from localStorage for immediate display
           const storedUserJson = localStorage.getItem(AUTH_USER_KEY);
           if (storedUserJson) {
             try {
@@ -77,33 +107,35 @@ export default function AuthProvider({ children }: AuthProviderProps) {
             }
           }
           
-          // Validate token with GitHub API
+          // Then validate token asynchronously
+          setIsValidating(true);
           const validToken = await validateGithubToken(storedToken);
+          setIsValidating(false);
           
           if (validToken) {
-            setToken(storedToken);
-            setIsAuthenticated(true);
+            console.log('[AUTH] Token validated successfully');
             
-            // We might already have set the user from localStorage,
-            // but we'll make sure we have fresh data from the API
+            // Update user data in the background if needed
             if (!user) {
-              const userData = await fetchUserData(storedToken);
-              if (userData) {
-                setUser(userData);
-                // Update stored user data
-                localStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
+              try {
+                const userData = await fetchUserData(storedToken);
+                if (userData) {
+                  setUser(userData);
+                  // Update stored user data
+                  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
+                }
+              } catch (e) {
+                console.warn('[AUTH] Could not fetch fresh user data, using stored data', e);
+                // Continue with stored data, don't clear auth
               }
             }
           } else {
             // Token is invalid, clear it
-            localStorage.removeItem(AUTH_TOKEN_KEY);
-            localStorage.removeItem(AUTH_USER_KEY);
-            setError("Authentication token expired, please log in again");
+            handleAuthError("Authentication token expired, please log in again");
           }
         }
       } catch (e) {
-        console.error('[AUTH] Error initializing auth:', e);
-        setError("Error initializing authentication");
+        handleAuthError("Error initializing authentication", false);
       } finally {
         setIsLoading(false);
       }
@@ -116,14 +148,17 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    const handleStorageChange = () => {
+    const handleStorageChange = (event?: StorageEvent) => {
+      console.log('[AUTH] Storage change detected', event?.key);
+      
+      // Check for auth completed flag
       const authCompleted = localStorage.getItem(AUTH_COMPLETED_KEY);
       
       if (authCompleted === 'true') {
         console.log('[AUTH] Detected auth completion in localStorage');
         localStorage.removeItem(AUTH_COMPLETED_KEY);
         
-        // Re-initialize auth
+        // Re-initialize auth state
         const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
         const storedUserJson = localStorage.getItem(AUTH_USER_KEY);
         
@@ -139,6 +174,11 @@ export default function AuthProvider({ children }: AuthProviderProps) {
               console.error('[AUTH] Error parsing stored user:', e);
             }
           }
+        } else {
+          // No token found, ensure we're logged out
+          setToken(null);
+          setUser(null);
+          setIsAuthenticated(false);
         }
       }
     };
@@ -146,14 +186,20 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     // Check immediately
     handleStorageChange();
     
-    // Set up event listener
-    window.addEventListener('storage', handleStorageChange);
+    // Set up storage event listener (works between tabs)
+    const storageListener = (event: StorageEvent) => handleStorageChange(event);
+    window.addEventListener('storage', storageListener);
+    
+    // Listen for custom storage events (within same tab)
+    const customStorageListener = () => handleStorageChange();
+    window.addEventListener('storage-update', customStorageListener);
     
     // Also check periodically in case event isn't fired
-    const interval = setInterval(handleStorageChange, 1000);
+    const interval = setInterval(() => handleStorageChange(), 2000);
     
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('storage', storageListener);
+      window.removeEventListener('storage-update', customStorageListener);
       clearInterval(interval);
     };
   }, []);
@@ -258,6 +304,9 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     
     // Redirect to home
     router.push('/');
+    
+    // Trigger custom event to notify other parts of the app
+    window.dispatchEvent(new Event('storage-update'));
   };
   
   // Helper function to generate random string for state parameter
@@ -276,6 +325,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       value={{ 
         isAuthenticated, 
         isLoading, 
+        isValidating,
         user, 
         token, 
         error,
