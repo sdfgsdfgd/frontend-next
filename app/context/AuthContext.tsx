@@ -51,13 +51,58 @@ interface AuthProviderProps {
 }
 
 export default function AuthProvider({ children }: AuthProviderProps) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // IMPORTANT: Check localStorage synchronously during initialization
+  // to avoid the flash of unauthenticated UI
+  const getInitialAuthState = () => {
+    // Only run in browser
+    if (typeof window === 'undefined') {
+      return {
+        token: null,
+        isAuthenticated: false,
+        user: null
+      };
+    }
+    
+    // Check for token in localStorage
+    const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
+    let initialUser = null;
+    
+    // Get user from localStorage if available
+    try {
+      const storedUserJson = localStorage.getItem(AUTH_USER_KEY);
+      if (storedUserJson) {
+        initialUser = JSON.parse(storedUserJson);
+      }
+    } catch (e) {
+      console.error('[AUTH] Error parsing stored user during initialization:', e);
+    }
+    
+    // Return initial state based on localStorage
+    return {
+      token: storedToken,
+      isAuthenticated: !!storedToken,
+      user: initialUser
+    };
+  };
+  
+  // Initialize state from localStorage synchronously
+  const initialState = getInitialAuthState();
+  const [isAuthenticated, setIsAuthenticated] = useState(initialState.isAuthenticated);
   const [isLoading, setIsLoading] = useState(true);
   const [isValidating, setIsValidating] = useState(false);
-  const [user, setUser] = useState<GitHubUser | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<GitHubUser | null>(initialState.user);
+  const [token, setToken] = useState<string | null>(initialState.token);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  
+  // Log initial state for debugging
+  useEffect(() => {
+    console.log('[AUTH] Initial state:', { 
+      isAuthenticated, 
+      hasToken: !!token,
+      hasUser: !!user
+    });
+  }, []);
   
   // Function to handle authentication errors gracefully
   const handleAuthError = (errorMessage: string, clearData: boolean = true) => {
@@ -86,30 +131,15 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(true);
       
       try {
-        // Get token from localStorage
-        const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
+        // We already set the initial state from localStorage synchronously,
+        // so we can skip that here and just validate the token
         
-        if (storedToken) {
-          console.log('[AUTH] Found token in localStorage');
+        if (token) {
+          console.log('[AUTH] Validating token from localStorage');
           
-          // Set token and authentication state immediately
-          setToken(storedToken);
-          setIsAuthenticated(true);
-          
-          // Get user from localStorage for immediate display
-          const storedUserJson = localStorage.getItem(AUTH_USER_KEY);
-          if (storedUserJson) {
-            try {
-              const storedUser = JSON.parse(storedUserJson);
-              setUser(storedUser);
-            } catch (e) {
-              console.error('[AUTH] Error parsing stored user:', e);
-            }
-          }
-          
-          // Then validate token asynchronously
+          // Validate token asynchronously
           setIsValidating(true);
-          const validToken = await validateGithubToken(storedToken);
+          const validToken = await validateGithubToken(token);
           setIsValidating(false);
           
           if (validToken) {
@@ -118,7 +148,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
             // Update user data in the background if needed
             if (!user) {
               try {
-                const userData = await fetchUserData(storedToken);
+                const userData = await fetchUserData(token);
                 if (userData) {
                   setUser(userData);
                   // Update stored user data

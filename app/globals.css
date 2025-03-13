@@ -9,6 +9,14 @@
     --button-bg: rgba(0, 0, 0, 0.75);
     --button-hover-bg: rgba(255, 255, 255, 0.1);
     --shadow-color: rgba(5, 5, 5, 0.25);
+    
+    /* Custom caret variables */
+    --caret-color: #f5b504;
+    --caret-glow: rgba(245, 181, 4, 0.6);
+    --caret-glow-strong: rgba(245, 181, 4, 0.8);
+    --caret-width: 2px;
+    --caret-height: 1.2em;
+    --caret-blink-speed: 1.2s;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -31,6 +39,66 @@ body {
     font-family: "Inter", sans-serif;
 }
 
+/* Basic caret color styling */
+.custom-caret {
+  /* Initially use default caret color before JS kicks in */
+  caret-color: var(--caret-color);
+}
+
+/* When JS is active, hide the native caret */
+.custom-caret.js-active {
+  caret-color: transparent;
+}
+
+/* Position relative for container to allow absolute positioning of caret */
+.custom-caret-container {
+  position: relative;
+}
+
+/* Animation for the caret blinking effect */
+@keyframes caretBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Animation for the caret glow effect */
+@keyframes caretGlow {
+  0% { 
+    box-shadow: 
+      0 0 4px 1px var(--caret-glow),
+      0 0 8px 2px var(--caret-glow-strong);
+  }
+  100% { 
+    box-shadow: 
+      0 0 6px 2px var(--caret-glow),
+      0 0 12px 4px var(--caret-glow-strong),
+      0 0 16px 6px rgba(245, 181, 4, 0.3);
+  }
+}
+
+/* Custom styling when text input is focused */
+.custom-caret:focus {
+  outline: none;
+  text-shadow: 0 0 8px rgba(245, 181, 4, 0.2);
+}
+
+/* Base styling for our beautiful text input */
+.luxury-input.custom-caret {
+  /* Add background for better caret visibility */
+  background: rgba(0, 0, 0, 0.2);
+  
+  /* Add more beautiful box shadow when focused */
+  transition: all 0.3s ease;
+}
+
+.luxury-input.custom-caret:focus {
+  background: rgba(20, 20, 20, 0.3);
+  box-shadow: 
+    inset 0 0 8px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(245, 181, 4, 0.2),
+    0 0 8px rgba(245, 181, 4, 0.15);
+}
+
 /* region Art & Animations */
 @keyframes fadeIn {
     0% {
@@ -46,7 +114,6 @@ body {
 .animate-fade-in {
     animation: fadeIn 0.5s ease-out forwards;
 }
-
 
 @keyframes fadeInDown {
     from {
@@ -553,6 +620,7 @@ body {
     opacity: 0;
   }
 }
+
 
 
 

@@ -43,6 +43,15 @@ export default function AIChatComponent() {
   const debouncedInput = useDebounce(userInput, 444);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatInputAreaRef = useRef<HTMLDivElement>(null);
+
+  // Debug log on mount
+  useEffect(() => {
+    console.log('[CHAT] AIChatComponent mounted');
+    return () => {
+      console.log('[CHAT] AIChatComponent unmounted');
+    };
+  }, []);
 
   useEffect(() => messagesEndRef.current?.scrollIntoView({behavior: "smooth"}), [messages, isTyping]);
   useEffect(() => {
@@ -69,7 +78,10 @@ export default function AIChatComponent() {
         messageStyles={messageStyles}
         messagesEndRef={messagesEndRef}
       />
-      <div className="flex justify-center items-start py-4 min-h-[4rem] w-auto max-w-full">
+      <div 
+        ref={chatInputAreaRef}
+        className="flex justify-center items-start py-4 min-h-[4rem] w-auto max-w-full"
+      >
         <div className="relative flex flex-col rounded-lg overflow-x-auto w-auto max-w-full
           transition duration-300 px-5 py-2.5
           focus-within:ring-2 ring-blue-500/60 ring-offset-2 ring-offset-gray-900/70

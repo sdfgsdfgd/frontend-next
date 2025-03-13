@@ -20,7 +20,7 @@ export default function ContentSyncEffect({ children }: ContentSyncEffectProps) 
   }, [isOpen]);
   
   return (
-    <div className="relative">
+    <div className="h-full">
       {/* Ambient light effect that shifts with sidebar */}
       <div 
         className="absolute inset-0 pointer-events-none transition-opacity duration-700"
@@ -53,7 +53,7 @@ export default function ContentSyncEffect({ children }: ContentSyncEffectProps) 
           stiffness: 400,
           damping: 30,
         }}
-        className="relative"
+        className="relative w-full h-full"
       >
         {children}
       </motion.div>
