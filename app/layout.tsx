@@ -1,6 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Poppins } from 'next/font/google'
+import { JetBrains_Mono, Crimson_Pro } from 'next/font/google'
 import React from "react";
 import dynamic from 'next/dynamic';
 import AuthProvider from './context/AuthContext';
@@ -13,9 +13,20 @@ const ResponsiveLayout = dynamic(
   { ssr: false }
 );
 
-const poppins = Poppins({
-  weight: ['400', '500', '600', '700'],
-  subsets: ['latin']
+// For code and main text - elegant monospace
+const jetbrainsMono = JetBrains_Mono({
+  weight: ['300', '400', '500'],
+  subsets: ['latin'],
+  variable: '--font-mono',
+  display: 'swap',
+});
+
+// For headings and special text - elegant serif
+const crimsonPro = Crimson_Pro({
+  weight: ['400', '500', '600'],
+  subsets: ['latin'],
+  variable: '--font-serif',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -29,7 +40,7 @@ export default function RootLayout({children,}: {
   return (
     <html lang="en">
       <body
-        className={`${poppins.className} bg-gray-900 text-gray-100`}
+        className={`${jetbrainsMono.variable} ${crimsonPro.variable} bg-gray-900 text-gray-100 font-mono`}
       >
         <AuthProvider>
           <WorkspaceProvider>

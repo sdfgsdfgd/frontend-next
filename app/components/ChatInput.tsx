@@ -96,7 +96,7 @@ export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInput
       >
         <div
           className={`
-            luxury-input px-3 py-2 text-white outline-none bg-none
+            luxury-input px-3 py-2 text-[var(--elegant-gold)] outline-none bg-none
             w-auto max-w-full min-w-[120px] custom-caret
             ${isJSActive ? 'js-active' : ''}
           `}
@@ -107,7 +107,11 @@ export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInput
           onKeyDown={handleKeyDown}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          style={{display: "inline-block"}}
+          style={{
+            display: "inline-block",
+            opacity: 0.85,
+            textShadow: 'var(--elegant-text-shadow)'
+          }}
         />
         
         {/* Custom caret element - only displayed if JS is active */}
@@ -122,14 +126,14 @@ export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInput
               background: 'linear-gradient(to bottom, transparent 0%, var(--caret-color) 20%, var(--caret-color) 80%, transparent 100%)',
               boxShadow: '0 0 4px 1px var(--caret-glow), 0 0 8px 2px var(--caret-glow-strong)',
               animation: 'caretBlink var(--caret-blink-speed) infinite ease-in-out, caretGlow 2s infinite alternate ease-in-out',
-              opacity: 1
+              opacity: 0.8
             }}
           />
         )}
         
         {/* Placeholder - only shown when not focused and empty */}
         {(!isFocused && (!userInput || userInput.length === 0)) && (
-          <div className="pointer-events-none text-gray-400 absolute top-2 left-3">
+          <div className="pointer-events-none text-[var(--elegant-gold-dim)] absolute top-2 left-4">
             Ask the AI ✨
           </div>
         )}

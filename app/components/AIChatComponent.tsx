@@ -12,27 +12,32 @@ const MSG_AI: MessageType = "ai";
 
 const messageStyles: Record<MessageType, string> = {
   [MSG_USER]: `
-    bg-gradient-to-r from-gray-700 to-gray-900 
+    bg-gradient-to-r from-gray-800 to-gray-900 
     text-white
     shadow-xl shadow-black/50
-    border border-white/10
+    border border-[rgba(138,101,52,0.3)]
     backdrop-blur-sm
     self-end
     hover:scale-[1.01]
     transition
     duration-300
+    text-opacity-85
+    text-shadow
+    animate-elegant-text-glow
   `,
   [MSG_AI]: `
-    bg-gradient-to-r from-transparent to-gray-800 to-transparent
-    text-white
-    shadow-2xl shadow-blue-800/50
-    border border-white/20
+    bg-gradient-to-r from-transparent via-gray-800 to-transparent
+    text-[rgba(138,101,52,0.8)]
+    shadow-2xl shadow-[rgba(138,101,52,0.1)]
+    border border-[rgba(138,101,52,0.2)]
     backdrop-blur-sm
     self-start
     animate-colorCycleGlow
     hover:scale-[1.01]
     transition
     duration-300
+    text-shadow
+    animate-elegant-text-glow
   `
 };
 
@@ -86,7 +91,7 @@ export default function AIChatComponent() {
           transition duration-300 px-5 py-2.5
           focus-within:ring-2 ring-blue-500/60 ring-offset-2 ring-offset-gray-900/70
           shadow-top-inset shadow-bottom shadow-2xl
-          animate-colorCycleGlow input-focus-glow border border-gray-800/50"
+          animate-colorCycleGlow input-focus-glow border border-black/50"
         >
           <ChatInput 
             userInput={userInput}

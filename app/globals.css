@@ -11,12 +11,19 @@
     --shadow-color: rgba(5, 5, 5, 0.25);
     
     /* Custom caret variables */
-    --caret-color: #f5b504;
-    --caret-glow: rgba(245, 181, 4, 0.6);
-    --caret-glow-strong: rgba(245, 181, 4, 0.8);
+    --caret-color: #b8fa10af;  /* Darker golden-copper */
+    --caret-glow: rgba(138, 101, 52, 0.5);
+    --caret-glow-strong: rgba(12, 12, 5, 0.722);
     --caret-width: 2px;
     --caret-height: 1.2em;
     --caret-blink-speed: 1.2s;
+    
+    /* Elegant font colors */
+    --elegant-gold: rgba(138, 101, 52, 0.8);
+    --elegant-gold-bright: rgba(170, 125, 65, 0.9);
+    --elegant-gold-dim: rgba(108, 78, 42, 0.65);
+    --elegant-gold-glow: rgba(138, 101, 52, 0.3);
+    --elegant-text-shadow: 0 0 3px rgba(138, 101, 52, 0.2);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -36,7 +43,9 @@ body {
     ) rgb(var(--background-start-rgb));
     cursor: url('https://www.gabrielatwell.com/icons/pointer.svg'), auto;
     margin: 0;
-    font-family: "Inter", sans-serif;
+    font-family: var(--font-mono, monospace);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 /* Basic caret color styling */
@@ -94,9 +103,7 @@ body {
 .luxury-input.custom-caret:focus {
   background: rgba(20, 20, 20, 0.3);
   box-shadow: 
-    inset 0 0 8px rgba(0, 0, 0, 0.2),
-    0 0 0 1px rgba(245, 181, 4, 0.2),
-    0 0 8px rgba(245, 181, 4, 0.15);
+    inset 0 0 8px rgba(0, 0, 0, 0.2);
 }
 
 /* region Art & Animations */
@@ -208,27 +215,28 @@ body {
 
 @keyframes colorCycleGlow {
     0% {
-        box-shadow: 0 0 12px 3px rgba(90, 197, 242, 0.02);
+        box-shadow: 0 0 12px 3px rgba(138, 101, 52, 0.02);
     }
     20% {
-        box-shadow: 0 0 16px 4px rgba(255, 70, 163, 0.15);
+        box-shadow: 0 0 16px 4px rgba(138, 101, 52, 0.08);
     }
     40% {
-        box-shadow: 0 0 20px 5px rgba(255, 200, 70, 0.3);
+        box-shadow: 0 0 18px 5px rgba(138, 101, 52, 0.15); 
     }
     60% {
-        box-shadow: 0 0 16px 4px rgba(90, 242, 120, 0.15);
+        box-shadow: 0 0 16px 4px rgba(138, 101, 52, 0.1);
     }
     80% {
-        box-shadow: 0 0 12px 3px rgba(90, 197, 242, 0.08);
+        box-shadow: 0 0 12px 3px rgba(138, 101, 52, 0.05);
     }
     100% {
-        box-shadow: 0 0 12px 3px rgba(90, 197, 242, 0.02);
+        box-shadow: 0 0 12px 3px rgba(138, 101, 52, 0.02);
     }
 }
 
 .animate-colorCycleGlow {
-    animation: colorCycleGlow 6s linear infinite;
+    animation: colorCycleGlow 8s linear infinite;
+    text-shadow: 0 0 3px rgba(138, 101, 52, 0.2);
 }
 
 /* endregion */
@@ -251,13 +259,19 @@ body {
 
 /* region Fancy Typography */
 .luxury-heading {
-    font-weight: 800; /* extra bold */
-    letter-spacing: 0.05em; /* tracking-wide */
+    font-family: var(--font-serif, serif);
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    color: var(--elegant-gold-bright);
+    text-shadow: 0 0 5px var(--elegant-gold-glow);
 }
 
 .luxury-text {
-    font-size: 0.875rem; /* text-sm */
+    font-size: 0.875rem;
     letter-spacing: 0.025em;
+    color: var(--elegant-gold);
+    text-shadow: var(--elegant-text-shadow);
+    opacity: 0.85;
 }
 
 .hover-tilt {
@@ -330,13 +344,19 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    color: var(--elegant-gold);
+    text-shadow: var(--elegant-text-shadow);
+    letter-spacing: 0.03em;
+    font-weight: 300;
+    opacity: 0.85;
+    animation: elegantTextGlow 4s ease-in-out infinite;
 }
 
 /* Input focus glow effect */
 .input-focus-glow:focus-within {
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3),
-    0 0 15px rgba(59, 130, 246, 0.2),
-    inset 0 0 4px rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 0 2px rgba(138, 101, 52, 0.2),
+    0 0 15px rgba(138, 101, 52, 0.15),
+    inset 0 0 4px rgba(138, 101, 52, 0.1);
 }
 
 /* Placeholder animation */
@@ -619,6 +639,26 @@ body {
     transform: translateX(100%);
     opacity: 0;
   }
+}
+
+/* Elegant text glow animation */
+@keyframes elegantTextGlow {
+  0% {
+    text-shadow: 0 0 3px rgba(138, 101, 52, 0.1);
+    opacity: 0.8;
+  }
+  50% {
+    text-shadow: 0 0 5px rgba(138, 101, 52, 0.2), 0 0 10px rgba(138, 101, 52, 0.1);
+    opacity: 0.85;
+  }
+  100% {
+    text-shadow: 0 0 3px rgba(138, 101, 52, 0.1);
+    opacity: 0.8;
+  }
+}
+
+.animate-elegant-text-glow {
+  animation: elegantTextGlow 4s ease-in-out infinite;
 }
 
 
