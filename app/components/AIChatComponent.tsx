@@ -76,7 +76,7 @@ export default function AIChatComponent() {
   };
 
   return (
-    <div className="flex-1 flex flex-col justify-end w-full h-full relative">
+    <div className="flex-1 flex flex-col justify-end w-full h-full relative p-12">
       <MessageList 
         messages={messages}
         isTyping={isTyping}
@@ -87,7 +87,7 @@ export default function AIChatComponent() {
         ref={chatInputAreaRef}
         className="flex justify-center items-start py-4 min-h-[4rem] w-auto max-w-full"
       >
-        <div className="relative flex flex-col rounded-lg overflow-x-auto w-auto max-w-full
+        <div className="relative flex flex-col rounded-lg overflow-x-auto w-auto min-w-[16rem] max-w-full
           transition duration-300 px-5 py-2.5
           focus-within:ring-2 ring-blue-500/60 ring-offset-2 ring-offset-gray-900/70
           shadow-top-inset shadow-bottom shadow-2xl

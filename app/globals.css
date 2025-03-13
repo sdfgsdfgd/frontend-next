@@ -215,28 +215,27 @@ body {
 
 @keyframes colorCycleGlow {
     0% {
-        box-shadow: 0 0 12px 3px rgba(138, 101, 52, 0.02);
+        box-shadow: 0 0 12px 3px rgba(90, 197, 242, 0.02);
     }
     20% {
-        box-shadow: 0 0 16px 4px rgba(138, 101, 52, 0.08);
+        box-shadow: 0 0 16px 4px rgba(255, 70, 163, 0.15);
     }
     40% {
-        box-shadow: 0 0 18px 5px rgba(138, 101, 52, 0.15); 
+        box-shadow: 0 0 20px 5px rgba(255, 200, 70, 0.3);
     }
     60% {
-        box-shadow: 0 0 16px 4px rgba(138, 101, 52, 0.1);
+        box-shadow: 0 0 16px 4px rgba(90, 242, 120, 0.15);
     }
     80% {
-        box-shadow: 0 0 12px 3px rgba(138, 101, 52, 0.05);
+        box-shadow: 0 0 12px 3px rgba(90, 197, 242, 0.08);
     }
     100% {
-        box-shadow: 0 0 12px 3px rgba(138, 101, 52, 0.02);
+        box-shadow: 0 0 12px 3px rgba(90, 197, 242, 0.02);
     }
 }
 
 .animate-colorCycleGlow {
-    animation: colorCycleGlow 8s linear infinite;
-    text-shadow: 0 0 3px rgba(138, 101, 52, 0.2);
+    animation: colorCycleGlow 7s linear infinite;
 }
 
 /* endregion */
