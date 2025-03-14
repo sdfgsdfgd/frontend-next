@@ -5,7 +5,8 @@ import { useAuth } from "../context/AuthContext";
 import { useWorkspace } from "../context/WorkspaceContext";
 import { useSidebar } from "../context/SidebarContext";
 import { ModalControlContext } from "../context/ModalContext";
-import { FaGithub } from "react-icons/fa";
+import { useUserSettings } from "../context/UserSettingsContext";
+import { FaGithub, FaHeadphones, FaVolumeUp, FaVolumeMute } from "react-icons/fa";
 import WorkspaceDisplay from "@/app/components/workspace/WorkspaceDisplay";
 import { Cinzel, Playfair_Display } from 'next/font/google';
 import { motion } from "framer-motion";
@@ -27,6 +28,7 @@ export default function Header() {
   const {workspace, isWorkspaceSelected} = useWorkspace();
   const {toggleSidebar, isOpen} = useSidebar();
   const {setAuthModalOpen} = useContext(ModalControlContext);
+  const {autoVoiceEnabled, toggleAutoVoice} = useUserSettings();
   const [hasSidebarChanged, setHasSidebarChanged] = useState(false);
 
   // Track sidebar changes for animation
@@ -72,6 +74,47 @@ export default function Header() {
 
         {/* Right side with auth and workspace controls */}
         <div className="col-span-4 flex items-center justify-end space-x-3 pr-16">
+          {/* Auto-voice toggle button - only show if user is authenticated */}
+          {isAuthenticated && (
+            <motion.button
+              onClick={toggleAutoVoice}
+              className="relative overflow-hidden rounded-lg cursor-pointer group mr-2"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              aria-label={autoVoiceEnabled ? "Disable auto voice" : "Enable auto voice"}
+              title={autoVoiceEnabled ? "Disable auto voice" : "Enable auto voice"}
+            >
+              {/* Background gradient blur effect */}
+              <div className="absolute inset-0 backdrop-blur-md border border-gray-800/40 rounded-lg
+                      group-hover:border-gray-600/60 group-hover:shadow-lg group-hover:shadow-black/30
+                      transition-all duration-300 bg-gradient-to-r from-black/40 via-gray-900/50 to-black/40 group-hover:from-black/50 group-hover:via-gray-900/60 group-hover:to-black/50">
+              </div>
+
+              {/* Ambient glow effect */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg bg-blue-500/5">
+              </div>
+
+              {/* Shimmer effect overlay */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent
+                            translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000
+                            ease-in-out opacity-0 group-hover:opacity-100">
+              </div>
+
+              {/* Content */}
+              <div className="relative z-10 py-2 px-3 flex items-center justify-center">
+                {autoVoiceEnabled ? (
+                  <div className="flex items-center text-[rgba(138,101,52,0.9)]">
+                    <FaVolumeUp size={18} className="text-[rgba(138,101,52,0.9)] group-hover:text-[rgba(170,125,65,0.95)] transition-colors" />
+                  </div>
+                ) : (
+                  <div className="flex items-center text-gray-400">
+                    <FaVolumeMute size={18} className="text-gray-500 group-hover:text-gray-300 transition-colors" />
+                  </div>
+                )}
+              </div>
+            </motion.button>
+          )}
+
           {/* Auth button */}
           <div>
             <motion.button

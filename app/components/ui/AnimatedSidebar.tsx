@@ -36,13 +36,7 @@ export default function AnimatedSidebar({
                 <h3 className="text-lg font-semibold mb-3 text-indigo-400">Tasks</h3>
                 <ul className="space-y-3">
                   <li className="text-gray-300 hover:text-white hover:bg-gray-800/50 transition px-3 py-2 rounded">
-                    Chat 1
-                  </li>
-                  <li className="text-gray-300 hover:text-white hover:bg-gray-800/50 transition px-3 py-2 rounded">
-                    Chat 2
-                  </li>
-                  <li className="text-gray-300 hover:text-white hover:bg-gray-800/50 transition px-3 py-2 rounded">
-                    Chat 3
+                    .
                   </li>
                 </ul>
               </nav>

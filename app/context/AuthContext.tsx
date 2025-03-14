@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 const AUTH_TOKEN_KEY = 'github-access-token';
 const AUTH_USER_KEY = 'github-user';
 const AUTH_COMPLETED_KEY = 'github-auth-completed';
+const OPENAI_API_KEY = 'openai-api-key';
+const OPENAI_INITIALIZED = 'openai-initialized';
 
 // Define user and auth state types
 export interface GitHubUser {
@@ -326,7 +328,8 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     // Clear tokens and user data
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_USER_KEY);
-    
+    localStorage.removeItem(OPENAI_API_KEY);
+
     // Reset state
     setToken(null);
     setUser(null);
