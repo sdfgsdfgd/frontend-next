@@ -10,8 +10,18 @@ type MessageType = "user" | "ai";
 const MSG_USER: MessageType = "user";
 const MSG_AI: MessageType = "ai";
 
+function findNearestScrollableParent(el: HTMLElement | null): HTMLElement | null {
+  if (!el) return null;
+  const style = window.getComputedStyle(el);
+  const overflowY = style.getPropertyValue("overflow-y");
+  const isScrollable =
+    (overflowY === "auto" || overflowY === "scroll") &&
+    el.scrollHeight > el.clientHeight;
+  return isScrollable ? el : findNearestScrollableParent(el.parentElement);
+}
+
 const messageStyles: Record<MessageType, string> = {
-  [MSG_USER]: `
+  user: `
     bg-gradient-to-r from-gray-800 to-gray-900 
     text-white
     shadow-xl shadow-black/50
@@ -25,7 +35,7 @@ const messageStyles: Record<MessageType, string> = {
     text-shadow
     animate-elegant-text-glow
   `,
-  [MSG_AI]: `
+  ai: `
     bg-gradient-to-r from-transparent via-gray-800 to-transparent
     text-[rgba(138,101,52,0.8)]
     shadow-2xl shadow-[rgba(138,101,52,0.1)]
@@ -45,6 +55,8 @@ export default function AIChatComponent() {
   const [userInput, setUserInput] = useState("");
   const [messages, setMessages] = useState<{ text: string; type: MessageType }[]>([]);
   const [isTyping, setAILoading] = useState(false);
+
+  // Debounce example
   const debouncedInput = useDebounce(userInput, 444);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -52,17 +64,61 @@ export default function AIChatComponent() {
 
   // Debug log on mount
   useEffect(() => {
-    console.log('[CHAT] AIChatComponent mounted');
-    return () => {
-      console.log('[CHAT] AIChatComponent unmounted');
-    };
+    console.log("[CHAT] AIChatComponent mounted");
+    return () => console.log("[CHAT] AIChatComponent unmounted");
   }, []);
 
-  useEffect(() => messagesEndRef.current?.scrollIntoView({behavior: "smooth"}), [messages, isTyping]);
+  // -----------------------------------
+  // (1) Scroll for new messages or AI is typing
+  // -----------------------------------
   useEffect(() => {
-    if (debouncedInput) console.log("User paused typing:", debouncedInput);
+    messagesEndRef.current?.scrollIntoView({behavior: "smooth"});
+  }, [messages, isTyping]);
+
+  // Optional: see what user typed after a pause
+  useEffect(() => {
+    if (debouncedInput) {
+      console.log("User paused typing:", debouncedInput);
+    }
   }, [debouncedInput]);
 
+  // -----------------------------------
+  // (2) EXTREMELY SMOOTH SCROLL for user typing changes
+  // -----------------------------------
+  useEffect(() => {
+    if (!chatInputAreaRef.current) return;
+
+    // Always run at least once, even if userInput is empty
+    requestAnimationFrame(() => {
+      // 1) SCROLL the window itself
+      window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: "smooth",
+      });
+
+      // 2) Then scroll the nearest scrollable parent
+      const scrollableParent = findNearestScrollableParent(chatInputAreaRef.current);
+      if (scrollableParent) {
+        // Use small timeouts so layout can settle
+        setTimeout(() => {
+          scrollableParent.scrollTo({
+            top: scrollableParent.scrollHeight,
+            behavior: "smooth",
+          });
+        }, 40);
+
+        // (Optional) A second pass to ensure no content shifts
+        setTimeout(() => {
+          scrollableParent.scrollTo({
+            top: scrollableParent.scrollHeight,
+            behavior: "smooth",
+          });
+        }, 200);
+      }
+    });
+  }, [userInput]); // trigger every time the userInput changes
+
+  // Fake AI response
   const handleUserQuery = async () => {
     if (!userInput.trim()) return;
     setMessages((prev) => [...prev, {text: userInput, type: MSG_USER}]);
@@ -76,14 +132,14 @@ export default function AIChatComponent() {
   };
 
   return (
-    <div className="flex-1 flex flex-col justify-end w-full h-full relative p-12">
-      <MessageList 
+    <div className="flex flex-col max-w-full h-full relative p-12">
+      <MessageList
         messages={messages}
         isTyping={isTyping}
         messageStyles={messageStyles}
         messagesEndRef={messagesEndRef}
       />
-      <div 
+      <div
         ref={chatInputAreaRef}
         className="flex justify-center items-start py-4 min-h-[4rem] w-auto max-w-full"
       >
@@ -93,7 +149,7 @@ export default function AIChatComponent() {
           shadow-top-inset shadow-bottom shadow-2xl
           animate-colorCycleGlow input-focus-glow border border-black/50"
         >
-          <ChatInput 
+          <ChatInput
             userInput={userInput}
             setUserInput={setUserInput}
             onSubmit={handleUserQuery}

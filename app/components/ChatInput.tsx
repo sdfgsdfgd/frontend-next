@@ -11,7 +11,7 @@ interface ChatInputProps {
 export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInputProps) {
   const inputRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
-  const [caretPosition, setCaretPosition] = useState({ left: 0, top: 0 });
+  const [caretPosition, setCaretPosition] = useState({ left: 4, top: 6 }); // Default position for empty field
   const [isJSActive, setIsJSActive] = useState(false);
 
   // Mark JS as active after mount
@@ -32,7 +32,15 @@ export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInput
   useEffect(() => {
     const updateCaretPosition = () => {
       if (!isFocused) return;
-      
+
+      // If the input is empty, use the default position aligned with content padding
+      if (!userInput || userInput.length === 0) {
+        if (inputRef.current) {
+          setCaretPosition({ left: 4, top: 6 });
+        }
+        return;
+      }
+
       const selection = window.getSelection();
       if (!selection || !selection.rangeCount) return;
       
@@ -59,7 +67,7 @@ export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInput
       document.removeEventListener('selectionchange', updateCaretPosition);
       window.removeEventListener('resize', updateCaretPosition);
     };
-  }, [isFocused]);
+  }, [isFocused, userInput]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -76,12 +84,61 @@ export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInput
   const handleContainerClick = () => {
     if (inputRef.current) {
       inputRef.current.focus();
-      setIsFocused(true);
+      
+      // Force a caret position update on click
+      setTimeout(() => {
+        // Special case for empty input
+        if (!userInput || userInput.length === 0) {
+          setCaretPosition({ left: 4, top: 6 });
+          return;
+        }
+
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+
+          if (inputRef.current) {
+            const inputRect = inputRef.current.getBoundingClientRect();
+            setCaretPosition({
+              left: rect.left - inputRect.left,
+              top: rect.top - inputRect.top
+            });
+          }
+        }
+      }, 10)
     }
   };
 
-  // Handle focus events
-  const handleFocus = () => setIsFocused(true);
+  // Handle focus events with improved caret handling
+  const handleFocus = () => {
+    setIsFocused(true);
+    
+    // Force a caret position calculation after a slight delay
+    // This ensures the DOM has settled and position is accurate
+    setTimeout(() => {
+      // Special case for empty input
+      if (!userInput || userInput.length === 0) {
+        setCaretPosition({ left: 4, top: 6 });
+        return;
+      }
+
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+
+        if (inputRef.current) {
+          const inputRect = inputRef.current.getBoundingClientRect();
+          setCaretPosition({
+            left: rect.left - inputRect.left,
+            top: rect.top - inputRect.top
+          });
+        }
+      }
+    }, 10);
+  };
+  
   const handleBlur = () => setIsFocused(false);
 
   return (
@@ -117,7 +174,7 @@ export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInput
         {/* Custom caret element - only displayed if JS is active */}
         {isFocused && isJSActive && (
           <div
-            className="pointer-events-none absolute"
+            className="pointer-events-none absolute animate-caretBlink"
             style={{
               left: `${caretPosition.left}px`,
               top: `${caretPosition.top}px`,
