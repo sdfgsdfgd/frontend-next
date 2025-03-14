@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { FaGithub, FaUser, FaSignOutAlt, FaSpinner } from 'react-icons/fa';
 
@@ -12,6 +12,14 @@ export default function AuthCard({ onClose }: AuthCardProps) {
   const { isAuthenticated, user, login, logout, isLoading: authLoading, error: authError } = useAuth();
   const [buttonLoading, setButtonLoading] = useState(false);
   const [error, setError] = useState("");
+  
+  // Debug user data
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('[AUTH_CARD] Authenticated user data:', user);
+      console.log('[AUTH_CARD] User avatar URL:', user?.avatar_url);
+    }
+  }, [isAuthenticated, user]);
   
   // Handle GitHub sign in
   const handleGitHubSignIn = async () => {
@@ -70,12 +78,32 @@ export default function AuthCard({ onClose }: AuthCardProps) {
       ) : isAuthenticated ? (
         <div className="space-y-6">
           <div className="bg-gray-700 rounded-lg p-4 flex items-center">
-            <div className="bg-blue-500 rounded-full p-2 mr-4">
-              <FaUser className="text-white" />
-            </div>
+            {user?.avatar_url ? (
+              <img 
+                src={user.avatar_url} 
+                alt={user?.login || "User"}
+                className="w-10 h-10 rounded-full mr-4"
+                onError={(e) => {
+                  console.error('[AUTH_CARD] Failed to load avatar image:', user.avatar_url);
+                  e.currentTarget.style.display = 'none';
+                  // Show fallback instead
+                  const fallbackElement = document.getElementById('auth-card-fallback-avatar');
+                  if (fallbackElement) {
+                    fallbackElement.style.display = 'flex';
+                  }
+                }}
+              />
+            ) : (
+              <div id="auth-card-fallback-avatar" className="bg-blue-500 rounded-full p-2 mr-4 flex items-center justify-center">
+                <FaUser className="text-white" />
+              </div>
+            )}
             <div>
               <h3 className="font-medium text-white">{user?.name || user?.login}</h3>
               <p className="text-sm text-gray-400">{user?.login}</p>
+              {user?.avatar_url && (
+                <p className="text-xs text-gray-500 mt-1 truncate max-w-[200px]">Avatar: {user.avatar_url}</p>
+              )}
             </div>
           </div>
           

@@ -147,9 +147,12 @@ export interface OpenAIContextType {
   client: OpenAI | null;
   apiKey: string;
   hasApiKey: boolean;
-  isApiKeyValid: boolean;
+  isKeyValid: boolean;
+  isLoading: boolean;
+  error: string | null;
   isAudioPlaying: boolean;
-  setApiKey: (key: string) => void;
+  setApiKey: (key: string) => Promise<boolean>;
+  clearApiKey: () => void;
   say: (text: string, voice?: "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer") => Promise<void>;
   stopCurrentAudio: () => void;
   generateCompletion: (messages: ChatCompletionMessageParam[], model?: string) => Promise<string>;
@@ -170,7 +173,9 @@ export function OpenAIProvider({children}: { children: ReactNode }) {
   const [client, setClient] = useState<OpenAI | null>(null);
   const [apiKey, setApiKeyState] = useState('');
   const [hasApiKey, setHasApiKey] = useState(false);
-  const [isApiKeyValid, setIsApiKeyValid] = useState(false);
+  const [isKeyValid, setIsKeyValid] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
 
   // Initialize from localStorage
@@ -187,8 +192,10 @@ export function OpenAIProvider({children}: { children: ReactNode }) {
   }, []);
 
   // Set API Key + create client
-  const setApiKey = useCallback((key: string) => {
+  const setApiKey = useCallback(async (key: string): Promise<boolean> => {
     console.log('[OPENAI-DEBUG] setApiKey, length:', key.length);
+    setIsLoading(true);
+    setError(null);
 
     setApiKeyState(key);
     setHasApiKey(!!key);
@@ -202,16 +209,32 @@ export function OpenAIProvider({children}: { children: ReactNode }) {
           dangerouslyAllowBrowser: true
         });
         setClient(newClient);
-        setIsApiKeyValid(true);
+        setIsKeyValid(true);
         console.log('[OPENAI-DEBUG] OpenAI client initialized');
+        return true;
       } else {
         setClient(null);
-        setIsApiKeyValid(false);
+        setIsKeyValid(false);
+        return false;
       }
     } catch (err) {
       console.error('[OPENAI-DEBUG] Error setting API key:', err);
-      setIsApiKeyValid(false);
+      setIsKeyValid(false);
+      setError(err instanceof Error ? err.message : 'Failed to set API key');
+      return false;
+    } finally {
+      setIsLoading(false);
     }
+  }, []);
+
+  // Clear API Key
+  const clearApiKey = useCallback(() => {
+    setApiKeyState('');
+    setHasApiKey(false);
+    setIsKeyValid(false);
+    setClient(null);
+    setError(null);
+    localStorage.removeItem(OPENAI_API_KEY_STORAGE);
   }, []);
 
   // Stop audio
@@ -323,9 +346,12 @@ export function OpenAIProvider({children}: { children: ReactNode }) {
     client,
     apiKey,
     hasApiKey,
-    isApiKeyValid,
+    isKeyValid,
+    isLoading,
+    error,
     isAudioPlaying,
     setApiKey,
+    clearApiKey,
     say,
     stopCurrentAudio,
     generateCompletion

@@ -144,7 +144,8 @@ export async function POST(request) {
           user: {
             id: userData.id,
             login: userData.login,
-            name: userData.name
+            name: userData.name,
+            avatar_url: userData.avatar_url
           }
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }

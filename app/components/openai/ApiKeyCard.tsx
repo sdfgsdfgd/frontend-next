@@ -1,17 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef, FormEvent } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useOpenAI } from "../../context/OpenAIContext";
-import { FaKey, FaSpinner, FaCheck, FaTimes, FaVolumeDown, FaVolumeMute } from 'react-icons/fa';
+import { FaCheck, FaKey, FaSpinner, FaTimes, FaVolumeDown, FaVolumeMute } from 'react-icons/fa';
 
 interface ApiKeyCardProps {
   onClose: () => void;
 }
 
 export default function ApiKeyCard({ onClose }: ApiKeyCardProps) {
-  const { apiKey, isKeyValid, isLoading, error, setApiKey, clearApiKey, generateVoiceConfirmation, say, isAudioPlaying, stopCurrentAudio } = useOpenAI();
+  const { apiKey, isKeyValid, isLoading, error, setApiKey, clearApiKey, say, isAudioPlaying, stopCurrentAudio } = useOpenAI();
   const [inputKey, setInputKey] = useState("");
-  const [buttonLoading, setButtonLoading] = useState(false);
   const [inputError, setInputError] = useState("");
   const [showKey, setShowKey] = useState(false);
   const isMountedRef = useRef(true);
@@ -47,11 +46,13 @@ export default function ApiKeyCard({ onClose }: ApiKeyCardProps) {
     
     if (!inputKey.trim()) {
       console.log('[APIKEYCARD-DEBUG] No API key entered');
+      setInputError("Please enter an API key");
       return;
     }
 
     // Show validation status
     setIsValidating(true);
+    setInputError("");
     console.log('[APIKEYCARD-DEBUG] Starting API key validation');
 
     try {
@@ -64,20 +65,18 @@ export default function ApiKeyCard({ onClose }: ApiKeyCardProps) {
         onClose();
       } else {
         console.error('[APIKEYCARD-DEBUG] API key validation failed');
-        setIsValidating(false);
         if (isMountedRef.current) {
-          setInputError("Failed to validate API key");
+          setInputError("Failed to validate API key. Please check your key and try again.");
         }
       }
     } catch (error) {
       console.error('[APIKEYCARD-DEBUG] Error validating API key:', error);
-      setIsValidating(false);
       if (isMountedRef.current) {
         setInputError(error instanceof Error ? error.message : "Failed to validate API key");
       }
     } finally {
       if (isMountedRef.current) {
-        setButtonLoading(false);
+        setIsValidating(false);
       }
     }
   };
@@ -93,10 +92,12 @@ export default function ApiKeyCard({ onClose }: ApiKeyCardProps) {
   const handlePlayVoice = () => {
     if (isKeyValid && !isAudioPlaying && isMountedRef.current) {
       console.log('[ApiKeyCard] Playing test voice message');
-      // Use a more descriptive test message
       say("Hello! This is a test of the OpenAI text-to-speech API. Your API key is working correctly.")
         .catch(err => {
           console.error('[ApiKeyCard] Error playing test voice:', err);
+          if (isMountedRef.current) {
+            setInputError("Failed to play test voice. Please check your API key and try again.");
+          }
         });
     }
   };
@@ -110,11 +111,12 @@ export default function ApiKeyCard({ onClose }: ApiKeyCardProps) {
     
     console.log('[ApiKeyCard] Starting voice demo sequence');
     
-    // Using only one call with the first voice instead of chaining all voices
-    // This approach is more reliable as we now have better audio management
     say(`${demoText} ${voices[0]}.`, voices[0])
       .catch(err => {
         console.error('[ApiKeyCard] Error playing voice demo:', err);
+        if (isMountedRef.current) {
+          setInputError("Failed to play voice demo. Please check your API key and try again.");
+        }
       });
   };
   
@@ -228,25 +230,28 @@ export default function ApiKeyCard({ onClose }: ApiKeyCardProps) {
             value={inputKey}
             onChange={(e) => setInputKey(e.target.value)}
             placeholder="sk-..."
-            className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:border-blue-500 focus:ring focus:ring-blue-500/30 focus:outline-none"
+            className="w-full p-2 pr-10 bg-gray-700 border border-gray-600 rounded-md text-white focus:border-blue-500 focus:ring focus:ring-blue-500/30 focus:outline-none"
+            style={{ paddingRight: "2.5rem" }}
           />
-          <button
-            type="button"
-            onClick={() => setShowKey(!showKey)}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
-          >
-            {showKey ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
-                <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
-              </svg>
-            )}
-          </button>
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <button
+              type="button"
+              onClick={() => setShowKey(!showKey)}
+              className="text-gray-400 hover:text-white focus:outline-none pointer-events-auto"
+            >
+              {showKey ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                  <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
+                  <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
         <p className="mt-1 text-xs text-gray-500">
           Your API key is stored locally and never sent to our servers
@@ -258,16 +263,16 @@ export default function ApiKeyCard({ onClose }: ApiKeyCardProps) {
         <button
           onClick={handleClear}
           className="flex-1 py-2 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
-          disabled={isLoading || buttonLoading}
+          disabled={isLoading || isValidating}
         >
           Clear
         </button>
         <button
           onClick={handleSubmit}
           className="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-center"
-          disabled={isLoading || buttonLoading}
+          disabled={isLoading || isValidating}
         >
-          {isLoading || buttonLoading ? (
+          {isLoading || isValidating ? (
             <FaSpinner className="animate-spin h-5 w-5" />
           ) : apiKey ? (
             "Update Key"

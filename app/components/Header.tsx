@@ -30,6 +30,15 @@ export default function Header() {
   const {setAuthModalOpen} = useContext(ModalControlContext);
   const {autoVoiceEnabled, toggleAutoVoice} = useUserSettings();
   const [hasSidebarChanged, setHasSidebarChanged] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
+
+  // Log user object for debugging
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('[HEADER] Authenticated user object:', user);
+      console.log('[HEADER] Avatar URL:', user?.avatar_url);
+    }
+  }, [isAuthenticated, user]);
 
   // Track sidebar changes for animation
   useEffect(() => {
@@ -158,7 +167,7 @@ export default function Header() {
               <div className="relative z-10 py-2.5 px-4 flex items-center">
                 {isAuthenticated ? (
                   <div className="flex items-center">
-                    {user?.avatar_url ? (
+                    {user?.avatar_url && !avatarError ? (
                       <div className="p-0.5 rounded-full bg-gray-900/60 backdrop-blur-sm flex-shrink-0
                                     border border-gray-700/30 group-hover:border-blue-500/50
                                     transition-all duration-300 mr-2">
@@ -166,6 +175,10 @@ export default function Header() {
                           src={user.avatar_url}
                           alt={user?.login || "User"}
                           className="w-6 h-6 rounded-full object-cover"
+                          onError={(e) => {
+                            console.error("[HEADER] Avatar image failed to load:", user.avatar_url);
+                            setAvatarError(true);
+                          }}
                         />
                       </div>
                     ) : (

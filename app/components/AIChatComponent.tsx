@@ -71,7 +71,7 @@ export default function AIChatComponent({ className }: { className?: string }) {
   const isFirstMount = useRef<boolean>(true);
   
   // Get OpenAI context functions and user settings
-  const { generateCompletion, isApiKeyValid, hasApiKey, say, stopCurrentAudio, isAudioPlaying } = useOpenAI();
+  const { generateCompletion, isKeyValid, hasApiKey, say, stopCurrentAudio, isAudioPlaying } = useOpenAI();
   const { autoVoiceEnabled } = useUserSettings();
   const { generateCompletion: contextGenerateCompletion } = useOpenAIContext();
 
