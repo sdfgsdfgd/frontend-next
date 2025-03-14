@@ -14,9 +14,7 @@ function findNearestScrollableParent(el: HTMLElement | null): HTMLElement | null
   if (!el) return null;
   const style = window.getComputedStyle(el);
   const overflowY = style.getPropertyValue("overflow-y");
-  const isScrollable =
-    (overflowY === "auto" || overflowY === "scroll") &&
-    el.scrollHeight > el.clientHeight;
+  const isScrollable = (overflowY === "auto" || overflowY === "scroll") && el.scrollHeight > el.clientHeight;
   return isScrollable ? el : findNearestScrollableParent(el.parentElement);
 }
 
@@ -58,7 +56,6 @@ export default function AIChatComponent() {
 
   // Debounce example
   const debouncedInput = useDebounce(userInput, 444);
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatInputAreaRef = useRef<HTMLDivElement>(null);
 
@@ -69,7 +66,7 @@ export default function AIChatComponent() {
   }, []);
 
   // -----------------------------------
-  // (1) Scroll for new messages or AI is typing
+  // (1) Smooth Scroll for Msg List updates
   // -----------------------------------
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({behavior: "smooth"});
@@ -83,7 +80,7 @@ export default function AIChatComponent() {
   }, [debouncedInput]);
 
   // -----------------------------------
-  // (2) EXTREMELY SMOOTH SCROLL for user typing changes
+  // (2) Smooth Scroll for user input interactions
   // -----------------------------------
   useEffect(() => {
     if (!chatInputAreaRef.current) return;
@@ -118,13 +115,12 @@ export default function AIChatComponent() {
     });
   }, [userInput]); // trigger every time the userInput changes
 
-  // Fake AI response
+  // Fake AI response - connecting soon with Websocket via engine api
   const handleUserQuery = async () => {
     if (!userInput.trim()) return;
     setMessages((prev) => [...prev, {text: userInput, type: MSG_USER}]);
     setUserInput("");
     setAILoading(true);
-
     setTimeout(() => {
       setMessages((prev) => [...prev, {text: "Simulated AI response.", type: MSG_AI}]);
       setAILoading(false);
@@ -139,10 +135,7 @@ export default function AIChatComponent() {
         messageStyles={messageStyles}
         messagesEndRef={messagesEndRef}
       />
-      <div
-        ref={chatInputAreaRef}
-        className="flex justify-center items-start py-4 min-h-[4rem] w-auto max-w-full"
-      >
+      <div ref={chatInputAreaRef} className="flex justify-center items-start py-4 min-h-[4rem] w-auto max-w-full">
         <div className="relative flex flex-col rounded-lg overflow-x-auto w-auto min-w-[16rem] max-w-full
           transition duration-300 px-5 py-2.5
           focus-within:ring-2 ring-blue-500/60 ring-offset-2 ring-offset-gray-900/70
