@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 
 interface ChatInputProps {
   userInput: string;
@@ -8,10 +8,12 @@ interface ChatInputProps {
   onSubmit: () => void;
 }
 
+const DEFAULT_CARET = {left: 4, top: 6};
+
 export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInputProps) {
   const inputRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
-  const [caretPosition, setCaretPosition] = useState({ left: 4, top: 6 }); // Default position for empty field
+  const [caretPosition, setCaretPosition] = useState(DEFAULT_CARET);
   const [isJSActive, setIsJSActive] = useState(false);
 
   // Mark JS as active after mount
@@ -19,147 +21,106 @@ export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInput
     setIsJSActive(true);
   }, []);
 
-  // On mount or userInput changes, we might want to sync the DOM
+  // Keep the DOM content in sync with `userInput` if needed
   useEffect(() => {
-    // If we truly want to keep the DOM in sync, do something like:
     if (inputRef.current && inputRef.current.textContent !== userInput) {
+      // can this cause cursor jumps if done after each keystroke ?
       inputRef.current.textContent = userInput;
     }
-    // But be aware this can still cause cursor jumps if done after each keystroke.
   }, [userInput]);
 
-  // Track caret position changes
+  // Helper to compute the new caret position
+  const calculateCaretPosition = useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return DEFAULT_CARET;
+
+    // If input is empty or we have no selection, place caret at the default
+    if (!userInput) return DEFAULT_CARET;
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return DEFAULT_CARET;
+
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    const parentRect = el.getBoundingClientRect();
+
+    // If the selection is out of bounds or collapsed, fallback
+    if (rect.width === 0 && rect.height === 0) return DEFAULT_CARET;
+
+    return {
+      left: rect.left - parentRect.left,
+      top: rect.top - parentRect.top
+    };
+  }, [userInput]);
+
+  // Updates the caret position from our helper
+  const updateCaretPosition = useCallback(() => {
+    setCaretPosition(calculateCaretPosition());
+  }, [calculateCaretPosition]);
+
+  // On focus/blur, track state
+  const handleFocus = () => {
+    setIsFocused(true);
+    // Let the DOM settle, then set caret
+    setTimeout(updateCaretPosition, 10);
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+  };
+
+  // Listen for selection changes only while focused
   useEffect(() => {
-    const updateCaretPosition = () => {
-      if (!isFocused) return;
+    if (!isFocused) return;
 
-      // If the input is empty, use the default position aligned with content padding
-      if (!userInput || userInput.length === 0) {
-        if (inputRef.current) {
-          setCaretPosition({ left: 4, top: 6 });
-        }
-        return;
-      }
+    document.addEventListener("selectionchange", updateCaretPosition);
+    window.addEventListener("resize", updateCaretPosition);
 
-      const selection = window.getSelection();
-      if (!selection || !selection.rangeCount) return;
-      
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      
-      if (inputRef.current) {
-        const inputRect = inputRef.current.getBoundingClientRect();
-        setCaretPosition({ 
-          left: rect.left - inputRect.left, 
-          top: rect.top - inputRect.top 
-        });
-      }
-    };
-
-    // Update position on various events
-    document.addEventListener('selectionchange', updateCaretPosition);
-    window.addEventListener('resize', updateCaretPosition);
-    
-    // Initial update
+    // On mount of effect, do initial positioning
     updateCaretPosition();
-    
-    return () => {
-      document.removeEventListener('selectionchange', updateCaretPosition);
-      window.removeEventListener('resize', updateCaretPosition);
-    };
-  }, [isFocused, userInput]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    return () => {
+      document.removeEventListener("selectionchange", updateCaretPosition);
+      window.removeEventListener("resize", updateCaretPosition);
+    };
+  }, [isFocused, updateCaretPosition]);
+
+  // Handle keystrokes
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSubmit();
     }
   };
 
-  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+  // Sync userInput from contentEditable
+  const handleInput = (e: FormEvent<HTMLDivElement>) => {
     setUserInput(e.currentTarget.textContent || "");
   };
 
-  // Handle container click to focus input
+  // Clicking on container focuses the contentEditable
   const handleContainerClick = () => {
     if (inputRef.current) {
       inputRef.current.focus();
-      
-      // Force a caret position update on click
-      setTimeout(() => {
-        // Special case for empty input
-        if (!userInput || userInput.length === 0) {
-          setCaretPosition({ left: 4, top: 6 });
-          return;
-        }
-
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          const rect = range.getBoundingClientRect();
-
-          if (inputRef.current) {
-            const inputRect = inputRef.current.getBoundingClientRect();
-            setCaretPosition({
-              left: rect.left - inputRect.left,
-              top: rect.top - inputRect.top
-            });
-          }
-        }
-      }, 10)
+      setTimeout(updateCaretPosition, 10);
     }
   };
 
-  // Handle focus events with improved caret handling
-  const handleFocus = () => {
-    setIsFocused(true);
-    
-    // Force a caret position calculation after a slight delay
-    // This ensures the DOM has settled and position is accurate
-    setTimeout(() => {
-      // Special case for empty input
-      if (!userInput || userInput.length === 0) {
-        setCaretPosition({ left: 4, top: 6 });
-        return;
-      }
-
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
-
-        if (inputRef.current) {
-          const inputRect = inputRef.current.getBoundingClientRect();
-          setCaretPosition({
-            left: rect.left - inputRect.left,
-            top: rect.top - inputRect.top
-          });
-        }
-      }
-    }, 10);
-  };
-  
-  const handleBlur = () => setIsFocused(false);
-
   return (
-    // Make entire container clickable
-    <div 
+    <div
       className="relative w-auto max-w-full min-w-[100px] px-2 py-2 cursor-text"
       onClick={handleContainerClick}
     >
-      {/* Contenteditable div with custom caret */}
-      <div
-        className="custom-caret-container relative"
-      >
+      <div className="custom-caret-container relative">
         <div
           className={`
             luxury-input px-3 py-2 text-[var(--elegant-gold)] outline-none bg-none
             w-auto max-w-full min-w-[120px] custom-caret
-            ${isJSActive ? 'js-active' : ''}
+            ${isJSActive ? "js-active" : ""}
           `}
+          ref={inputRef}
           contentEditable
           suppressContentEditableWarning
-          ref={inputRef}
           onInput={handleInput}
           onKeyDown={handleKeyDown}
           onFocus={handleFocus}
@@ -167,10 +128,10 @@ export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInput
           style={{
             display: "inline-block",
             opacity: 0.85,
-            textShadow: 'var(--elegant-text-shadow)'
+            textShadow: "var(--elegant-text-shadow)"
           }}
         />
-        
+
         {/* Custom caret element - only displayed if JS is active */}
         {isFocused && isJSActive && (
           <div
@@ -178,18 +139,21 @@ export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInput
             style={{
               left: `${caretPosition.left}px`,
               top: `${caretPosition.top}px`,
-              width: 'var(--caret-width)',
-              height: 'var(--caret-height)',
-              background: 'linear-gradient(to bottom, transparent 0%, var(--caret-color) 20%, var(--caret-color) 80%, transparent 100%)',
-              boxShadow: '0 0 4px 1px var(--caret-glow), 0 0 8px 2px var(--caret-glow-strong)',
-              animation: 'caretBlink var(--caret-blink-speed) infinite ease-in-out, caretGlow 2s infinite alternate ease-in-out',
+              width: "var(--caret-width)",
+              height: "var(--caret-height)",
+              background:
+                "linear-gradient(to bottom, transparent 0%, var(--caret-color) 20%, var(--caret-color) 80%, transparent 100%)",
+              boxShadow:
+                "0 0 4px 1px var(--caret-glow), 0 0 8px 2px var(--caret-glow-strong)",
+              animation:
+                "caretBlink var(--caret-blink-speed) infinite ease-in-out, caretGlow 2s infinite alternate ease-in-out",
               opacity: 0.8
             }}
           />
         )}
-        
-        {/* Placeholder - only shown when not focused and empty */}
-        {(!isFocused && (!userInput || userInput.length === 0)) && (
+
+        {/* Placeholder when unfocused & empty */}
+        {!isFocused && !userInput && (
           <div className="pointer-events-none text-[var(--elegant-gold-dim)] absolute top-2 left-4">
             Ask the AI ✨
           </div>

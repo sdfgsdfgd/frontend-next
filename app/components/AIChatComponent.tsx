@@ -124,7 +124,7 @@ export default function AIChatComponent() {
     setTimeout(() => {
       setMessages((prev) => [...prev, {text: "Simulated AI response.", type: MSG_AI}]);
       setAILoading(false);
-    }, 1500);
+    }, 3500);
   };
 
   return (
