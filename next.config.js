@@ -20,6 +20,7 @@ module.exports = {
     ]
   },
   
+  // TODO: Remove, .env s should be taking care of this already
   // Ensure environment variables are passed correctly
   env: {
     // Auth URLs

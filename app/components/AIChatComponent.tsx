@@ -105,7 +105,8 @@ export default function AIChatComponent({ className }: { className?: string }) {
       isFirstMount.current = false;
       console.log('[AICHAT-DEBUG] First mount with API key, adding welcome message');
       
-      const welcomeMessage = "Now let me understand the Codebase, please wait, this may take a while";
+      // TODO ------------------------ !!!!!!!!!!! ------------------------------------
+      const welcomeMessage = "Going through the code !";
       
       // Important: Set the welcome message BEFORE playing audio to ensure it's visible
       setMessages([{text: welcomeMessage, type: MSG_AI}]);

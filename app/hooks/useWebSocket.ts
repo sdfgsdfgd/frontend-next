@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface WebSocketHookProps {
   url: string;
@@ -16,10 +16,10 @@ interface UseWebSocketReturn {
 }
 
 export default function useWebSocket({
-  url,
-  reconnectInterval = 5000,
-  maxReconnectAttempts = 5
-}: WebSocketHookProps): UseWebSocketReturn {
+                                       url,
+                                       reconnectInterval = 5000,
+                                       maxReconnectAttempts = 5
+                                     }: WebSocketHookProps): UseWebSocketReturn {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [lastMessage, setLastMessage] = useState<string | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
@@ -29,12 +29,12 @@ export default function useWebSocket({
   const connect = useCallback(() => {
     try {
       // Close existing connection if any
-      if (socketRef.current?.readyState === WebSocket.OPEN || 
-          socketRef.current?.readyState === WebSocket.CONNECTING) {
+      if (socketRef.current?.readyState === WebSocket.OPEN ||
+        socketRef.current?.readyState === WebSocket.CONNECTING) {
         console.log('Closing existing WebSocket connection before creating a new one');
         socketRef.current.close();
       }
-      
+
       console.log(`Connecting to WebSocket at ${url}...`);
       const socket = new WebSocket(url);
       socketRef.current = socket;
@@ -54,12 +54,12 @@ export default function useWebSocket({
       socket.onclose = (event) => {
         console.log(`WebSocket connection closed with code ${event.code}: ${event.reason}`);
         setConnectionStatus('disconnected');
-        
+
         // Check for specific close reasons
         if (event.code === 1013) { // Try again later (server at capacity)
           console.warn('Server is at capacity, will try again later');
         }
-        
+
         // Only attempt automatic reconnection for unexpected closures or if server requests retry
         if ((event.code >= 1001 && event.code <= 1013) && reconnectAttemptsRef.current < maxReconnectAttempts) {
           console.log(`Reconnect attempt ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts} in ${reconnectInterval}ms`);
@@ -77,7 +77,7 @@ export default function useWebSocket({
     } catch (error) {
       console.error('Failed to connect to WebSocket:', error);
       setConnectionStatus('disconnected');
-      
+
       // Attempt to reconnect after error
       if (reconnectAttemptsRef.current < maxReconnectAttempts) {
         console.log(`Reconnect attempt ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts} in ${reconnectInterval}ms`);
@@ -110,17 +110,17 @@ export default function useWebSocket({
    */
   const reconnect = useCallback(() => {
     console.log('Manually initiating WebSocket reconnection');
-    
+
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
-    
+
     if (socketRef.current) {
-      socketRef.current.close();
+      socketRef.current.close(1000, 'Reconnecting...');
       socketRef.current = null;
     }
-    
+
     reconnectAttemptsRef.current = 0;
     connect();
   }, [connect]);
@@ -131,14 +131,14 @@ export default function useWebSocket({
   useEffect(() => {
     console.log('WebSocket hook initialized, establishing connection...');
     connect();
-    
+
     return () => {
       console.log('Cleaning up WebSocket connection');
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
       }
-      
+
       if (socketRef.current) {
         socketRef.current.close(1000, 'Component unmounted');
         socketRef.current = null;
@@ -146,5 +146,5 @@ export default function useWebSocket({
     };
   }, [connect]);
 
-  return { sendMessage, lastMessage, connectionStatus, reconnect };
+  return {sendMessage, lastMessage, connectionStatus, reconnect};
 } 
