@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import AuthProvider from './context/AuthContext';
 import { WorkspaceProvider } from './context/WorkspaceContext';
 import { SidebarProvider } from './context/SidebarContext';
+import { WebSocketProvider } from './context/WebSocketContext';
 import UserSettingsProvider from './context/UserSettingsContext';
 
 // Import our client-side responsive layout component
@@ -50,15 +51,17 @@ export default function RootLayout({children,}: {
     <html lang="en" className={`${inter.variable} ${crimsonPro.variable} bg-gray-900 text-gray-100 font-mono`}>
       <body>
         <AuthProvider>
-          <WorkspaceProvider>
-            <SidebarProvider>
-              <UserSettingsProvider>
-                <ResponsiveLayout>
-                  {children}
-                </ResponsiveLayout>
-              </UserSettingsProvider>
-            </SidebarProvider>
-          </WorkspaceProvider>
+          <WebSocketProvider>
+            <WorkspaceProvider>
+              <SidebarProvider>
+                <UserSettingsProvider>
+                  <ResponsiveLayout>
+                    {children}
+                  </ResponsiveLayout>
+                </UserSettingsProvider>
+              </SidebarProvider>
+            </WorkspaceProvider>
+          </WebSocketProvider>
         </AuthProvider>
       </body>
     </html>

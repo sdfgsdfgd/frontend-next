@@ -8,6 +8,7 @@ import { ModalControlContext } from "../context/ModalContext";
 import { useUserSettings } from "../context/UserSettingsContext";
 import { FaGithub, FaHeadphones, FaVolumeUp, FaVolumeMute } from "react-icons/fa";
 import WorkspaceDisplay from "@/app/components/workspace/WorkspaceDisplay";
+import WorkspaceSyncStatus from "@/app/components/workspace/WorkspaceSyncStatus";
 import { Cinzel, Playfair_Display } from 'next/font/google';
 import { motion } from "framer-motion";
 
@@ -55,7 +56,7 @@ export default function Header() {
       {/* Subtle edge glow */}
       <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
 
-      <div className="grid grid-cols-12 h-20 items-center relative z-10">
+      <div className="grid grid-cols-12 h-24 items-center relative z-10 p-1">
         {/* Left side with logo and workspace info */}
         <div className="col-span-3 flex items-center space-x-2 pl-4">
           <div className={`
@@ -75,9 +76,14 @@ export default function Header() {
         </div>
 
         {/* Middle area - can be empty or contain other elements */}
-        <div className="col-span-5">
+        <div className="col-span-5"> 
           {isWorkspaceSelected && (
-            <WorkspaceDisplay/>
+            <div className="flex items-center space-x-2">
+              <WorkspaceDisplay/>
+              {isAuthenticated && isWorkspaceSelected && (
+                <WorkspaceSyncStatus />
+              )}
+            </div>
           )}
         </div>
 

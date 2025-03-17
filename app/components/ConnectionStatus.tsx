@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from 'react';
-import useWebSocket from '../hooks/useWebSocket';
+import { useWebSocketContext } from '../context/WebSocketContext';
+import { motion } from 'framer-motion';
+import { FaWifi, FaExclamationTriangle, FaCheck } from 'react-icons/fa';
+
+// Debug mode - set to true to always show connection status
+const DEBUG_SHOW_ALWAYS = true;
 
 interface ConnectionStatusProps {
   url: string;
@@ -13,15 +18,16 @@ export default function ConnectionStatus({url}: ConnectionStatusProps) {
     reconnect,
     lastMessage,
     sendMessage,
-  } = useWebSocket({
-    url,
-    reconnectInterval: 3000,
-    maxReconnectAttempts: 10,
-  });
+  } = useWebSocketContext();
 
   const [lastPingTime, setLastPingTime] = useState<Date | null>(null);
   const [roundTripMs, setRoundTripMs] = useState<number | null>(null);
   const [serverDeltaMs, setServerDeltaMs] = useState<number | null>(null);
+
+  // Log connection status for debugging
+  useEffect(() => {
+    console.log('[CONNECTION-DEBUG] WebSocket connection status:', connectionStatus);
+  }, [connectionStatus]);
 
   // Helper: color code latency
   const getLatencyColor = (latency: number) => {
@@ -41,7 +47,7 @@ export default function ConnectionStatus({url}: ConnectionStatusProps) {
           clientTimestamp: now,
         })
       );
-      console.log('Sent ping to Ktor backend:', now);
+      console.log('[CONNECTION-DEBUG] Sent ping to Ktor backend:', now);
     }
   }, [connectionStatus, sendMessage]);
 
@@ -49,18 +55,18 @@ export default function ConnectionStatus({url}: ConnectionStatusProps) {
   useEffect(() => {
     if (!lastMessage) return;
 
-    console.log('ConnectionStatus: received message = ', lastMessage);
+    console.log('[CONNECTION-DEBUG] Received message = ', lastMessage);
 
     try {
       const data = JSON.parse(lastMessage);
-      console.log('Parsed data:', data);
+      console.log('[CONNECTION-DEBUG] Parsed data:', data);
       
       // Check if it's a pong message from your Ktor backend
       if (data.type === 'pong') {
         // The server should reply with { type: "pong", clientTimestamp, serverTimestamp }
         const {clientTimestamp, serverTimestamp} = data;
         const now = Date.now();
-        console.log('Got a PONG response, timestamps = ', clientTimestamp, serverTimestamp);
+        console.log('[CONNECTION-DEBUG] Got a PONG response, timestamps = ', clientTimestamp, serverTimestamp);
 
         // (1) Round-trip = now - clientTimestamp
         if (typeof clientTimestamp === 'number') {
@@ -76,7 +82,7 @@ export default function ConnectionStatus({url}: ConnectionStatusProps) {
       }
     } catch (err) {
       // Not a valid JSON or not a "pong" we care about
-      console.error('Failed to parse message from WebSocket', err);
+      console.error('[CONNECTION-DEBUG] Failed to parse message from WebSocket', err);
     }
   }, [lastMessage]);
 
@@ -93,7 +99,7 @@ export default function ConnectionStatus({url}: ConnectionStatusProps) {
   // Ping once after initial connection, just to test quickly
   useEffect(() => {
     if (connectionStatus === 'connected') {
-      console.log('WebSocket connection established, sending initial ping in 500ms');
+      console.log('[CONNECTION-DEBUG] WebSocket connection established, sending initial ping in 500ms');
       const timer = setTimeout(() => {
         sendPing();
       }, 500);

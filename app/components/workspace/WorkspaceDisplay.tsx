@@ -1,14 +1,78 @@
 "use client";
 
 import { useWorkspace } from "@/app/context/WorkspaceContext";
-import { FaGithub, FaFolder, FaExternalLinkAlt, FaCaretDown } from "react-icons/fa";
-import { useContext } from "react";
+import { FaGithub, FaFolder, FaExternalLinkAlt, FaCaretDown, FaSync } from "react-icons/fa";
+import { useContext, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ModalControlContext } from "@/app/context/ModalContext";
+import { useWebSocketContext, GitHubRepoData } from "@/app/context/WebSocketContext";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function WorkspaceDisplay() {
   const { workspace, isWorkspaceSelected } = useWorkspace();
   const { setWorkspaceSelectorOpen } = useContext(ModalControlContext);
+  const { selectGitHubRepo, connectionStatus } = useWebSocketContext();
+  const { token } = useAuth();
+  const [syncAttempted, setSyncAttempted] = useState(false);
+  
+  // Trigger sync when a GitHub workspace is loaded or selected
+  // AND the WebSocket connection is established
+  useEffect(() => {
+    const shouldSync = 
+      isWorkspaceSelected && 
+      workspace && 
+      workspace.type === "github" && 
+      token && 
+      connectionStatus === 'connected' &&
+      !syncAttempted;
+    
+    if (shouldSync) {
+      console.log('[WORKSPACE-DEBUG] Workspace loaded/selected and WebSocket connected, triggering sync:', workspace.name);
+      
+      // Mark that we've attempted sync for this session
+      setSyncAttempted(true);
+      
+      // Prepare repo data
+      const repoData: GitHubRepoData = {
+        repoId: workspace.id as number,
+        name: workspace.name,
+        owner: workspace.url ? workspace.url.split('/')[3] : '',  // Extract owner from URL: https://github.com/owner/repo
+        url: workspace.url || '',
+        branch: 'main'  // Default to main, adjust as needed
+      };
+      
+      // Trigger WebSocket sync
+      try {
+        console.log('[WORKSPACE-DEBUG] Auto-triggering repository sync with data:', repoData);
+        selectGitHubRepo(repoData, token)
+          .then(result => {
+            console.log('[WORKSPACE-DEBUG] Auto-sync complete:', result);
+          })
+          .catch(error => {
+            console.error('[WORKSPACE-DEBUG] Auto-sync failed:', error);
+            // Reset syncAttempted after 5 seconds to allow retrying
+            setTimeout(() => setSyncAttempted(false), 5000);
+          });
+      } catch (error) {
+        console.error('[WORKSPACE-DEBUG] Error starting auto-sync:', error);
+        // Reset syncAttempted after error to allow retrying
+        setTimeout(() => setSyncAttempted(false), 5000);
+      }
+    }
+  }, [workspace, isWorkspaceSelected, token, selectGitHubRepo, connectionStatus, syncAttempted]);
+  
+  // Reset syncAttempted when workspace changes
+  useEffect(() => {
+    if (workspace) {
+      console.log('[WORKSPACE-DEBUG] Workspace changed, resetting sync attempted flag');
+      setSyncAttempted(false);
+    }
+  }, [workspace?.id]); // Only reset when the workspace ID changes
+  
+  // Log connection status changes
+  useEffect(() => {
+    console.log('[WORKSPACE-DEBUG] WebSocket connection status changed:', connectionStatus);
+  }, [connectionStatus]);
   
   // Function to open the workspace selector
   const handleOpenWorkspaceSelector = () => {

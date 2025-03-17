@@ -8,7 +8,6 @@ import MessageList from "./MessageList";
 import ChatInput from "./ChatInput";
 import "../globals.css";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import { useOpenAI as useOpenAIContext } from '../context/OpenAIContext';
 
 type MessageType = "user" | "ai";
 const MSG_USER: MessageType = "user";
@@ -56,29 +55,27 @@ const messageStyles: Record<MessageType, string> = {
   `
 };
 
-export default function AIChatComponent({ className }: { className?: string }) {
+export default function AIChatComponent({className}: { className?: string }) {
   const [messages, setMessages] = useState<{ text: string; type: MessageType }[]>([]);
   const [input, setInput] = useState<string>("");
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const debouncedInput = useDebounce(input, 300);
-  const [isGeneratingCompletion, setIsGeneratingCompletion] = useState<boolean>(false);
-  
+
   // Refs for DOM elements
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatInputAreaRef = useRef<HTMLDivElement>(null);
-  
+
   // Track if this is the first mount for welcome message
   const isFirstMount = useRef<boolean>(true);
-  
+
   // Get OpenAI context functions and user settings
-  const { generateCompletion, isKeyValid, hasApiKey, say, stopCurrentAudio, isAudioPlaying } = useOpenAI();
-  const { autoVoiceEnabled } = useUserSettings();
-  const { generateCompletion: contextGenerateCompletion } = useOpenAIContext();
+  const {generateCompletion, isKeyValid, hasApiKey, say, stopCurrentAudio, isAudioPlaying} = useOpenAI();
+  const {autoVoiceEnabled} = useUserSettings();
 
   // Auto-scroll to the bottom when messages change
   useEffect(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      messagesEndRef.current.scrollIntoView({behavior: "smooth"});
     }
   }, [messages]);
 
@@ -90,35 +87,35 @@ export default function AIChatComponent({ className }: { className?: string }) {
       isAudioPlaying,
       autoVoiceEnabled
     });
-    
+
     // Reference to track if component is still mounted
     let isMounted = true;
     // Timer reference for cleanup
     let welcomeTimer: NodeJS.Timeout | null = null;
-    
+
     // Check if we've already played the welcome message in this session
     const hasPlayedWelcomeMessage = sessionStorage.getItem(SESSION_WELCOME_KEY) === 'true';
-    
+
     // Create a welcome message only if we have API key and it's the first mount
     // and we haven't played the welcome message yet this session
     if (hasApiKey && isFirstMount.current && !hasPlayedWelcomeMessage) {
       isFirstMount.current = false;
       console.log('[AICHAT-DEBUG] First mount with API key, adding welcome message');
-      
+
       // TODO ------------------------ !!!!!!!!!!! ------------------------------------
       const welcomeMessage = "Going through the code !";
-      
+
       // Important: Set the welcome message BEFORE playing audio to ensure it's visible
       setMessages([{text: welcomeMessage, type: MSG_AI}]);
-      
+
       // CRITICAL FIX: Directly mark that we've played the welcome message in this session
       // to avoid any issues with re-renders or missed session storage updates
       sessionStorage.setItem(SESSION_WELCOME_KEY, 'true');
-      
+
       // Only play welcome message if auto-voice is enabled
       if (autoVoiceEnabled) {
         console.log('[AICHAT-DEBUG] Auto-voice enabled, scheduling welcome message playback');
-        
+
         // IMPORTANT: Guaranteed playback with shorter, more reliable delay
         welcomeTimer = setTimeout(() => {
           // Only proceed if component is still mounted
@@ -126,19 +123,19 @@ export default function AIChatComponent({ className }: { className?: string }) {
             console.error('[AICHAT-DEBUG] Component unmounted before welcome audio could play');
             return;
           }
-          
+
           // Only play audio if component is still mounted and no audio is playing
           console.log('[AICHAT-DEBUG] Playing welcome message audio:', {
             hasApiKey,
             isAudioPlaying,
             componentStillMounted: isMounted
           });
-          
+
           // IMPORTANT: Force play the welcome message, ignoring audio playing state
           // since this is a critical user experience feature
           stopCurrentAudio(); // Make sure no other audio is playing
           console.log('[AICHAT-DEBUG] Playing welcome message audio (auto-voice enabled)');
-          
+
           say(welcomeMessage)
             .then(() => {
               if (isMounted) {
@@ -161,20 +158,20 @@ export default function AIChatComponent({ className }: { className?: string }) {
         hasPlayedWelcomeMessage
       });
     }
-    
+
     // Clean up audio resources when component unmounts
     return () => {
       console.log("[AICHAT-DEBUG] AIChatComponent unmounting, cleaning up resources");
-      
+
       // Mark component as unmounted to prevent state updates
       isMounted = false;
-      
+
       // Clear the welcome message timeout if it exists
       if (welcomeTimer) {
         console.log("[AICHAT-DEBUG] Clearing welcome message timeout");
         clearTimeout(welcomeTimer);
       }
-      
+
       // We no longer need to stop audio on unmount since AudioManager is persistent
       // This was causing the audio to stop during React StrictMode remounting
       console.log("[AICHAT-DEBUG] Component unmounted but not stopping audio to allow playback to continue");
@@ -234,13 +231,13 @@ export default function AIChatComponent({ className }: { className?: string }) {
   // API response handling function with OpenAI
   const handleUserQuery = async () => {
     if (!input.trim()) return;
-    
+
     // Add user message
     setMessages((prev) => [...prev, {text: input, type: MSG_USER}]);
     const currentInput = input; // Save the current input
     setInput(""); // Clear input field
     setIsTyping(true);
-    
+
     try {
       // If we don't have an API key, fall back to simulated response
       if (!hasApiKey) {
@@ -253,28 +250,28 @@ export default function AIChatComponent({ className }: { className?: string }) {
         }, 1000);
         return;
       }
-      
+
       // Convert message history to OpenAI format
       const messageHistory: ChatCompletionMessageParam[] = messages.map(msg => ({
         role: msg.type === MSG_USER ? "user" : "assistant",
         content: msg.text
       }));
-      
+
       // Add system message at the beginning
       const systemMessage: ChatCompletionMessageParam = {
         role: "system",
         content: "You are an AI assistant. Be concise, helpful and friendly."
       };
-      
+
       // Add the current user message
       messageHistory.push({
         role: "user",
         content: currentInput
       });
-      
+
       // Get AI response from OpenAI
       const aiResponse = await generateCompletion([systemMessage, ...messageHistory]);
-      
+
       // Add AI response to message list
       setMessages((prev) => [...prev, {text: aiResponse, type: MSG_AI}]);
     } catch (error) {
@@ -290,7 +287,8 @@ export default function AIChatComponent({ className }: { className?: string }) {
   };
 
   return (
-    <div className={`flex flex-col rounded-lg overflow-hidden border border-[rgba(138,101,52,0.1)] min-h-[400px] h-full bg-black/20 backdrop-blur-sm ${className || ''}`}>
+    <div
+      className={`flex flex-col rounded-lg overflow-hidden border border-[rgba(138,101,52,0.1)] min-h-[400px] h-full bg-black/20 backdrop-blur-sm ${className || ''}`}>
       <MessageList
         messages={messages}
         isTyping={isTyping}

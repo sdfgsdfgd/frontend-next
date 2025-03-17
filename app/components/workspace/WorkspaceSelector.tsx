@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaGithub, FaFolder, FaTimes, FaSearch, FaCheck, FaStar, FaCodeBranch, FaLock, FaEye, FaCode } from "react-icons/fa";
+import { useWebSocketContext, GitHubRepoData } from "../../context/WebSocketContext";
 
 // Helper to format dates
 const formatDate = (dateString: string) => {
@@ -30,6 +31,7 @@ interface WorkspaceSelectorProps {
 
 export default function WorkspaceSelector({ isOpen, onClose, onSelectWorkspace }: WorkspaceSelectorProps) {
   const { user, isAuthenticated, token } = useAuth();
+  const { selectGitHubRepo } = useWebSocketContext();
   const [tab, setTab] = useState<"github" | "local">(isAuthenticated ? "github" : "local");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRepoId, setSelectedRepoId] = useState<number | null>(null);
@@ -139,21 +141,70 @@ export default function WorkspaceSelector({ isOpen, onClose, onSelectWorkspace }
   };
   
   // Handle form submission for GitHub repo
-  const handleGithubSubmit = () => {
+  const handleGithubSubmit = async () => {
     if (!selectedRepoId || !githubRepos) return;
     
-    const selectedRepo = githubRepos.find(repo => repo.id === selectedRepoId);
-    if (!selectedRepo) return;
-    
-    onSelectWorkspace({
-      type: "github",
-      id: selectedRepo.id,
-      name: selectedRepo.name,
-      url: selectedRepo.url,
-      description: selectedRepo.description || undefined
-    });
-    
-    onClose();
+    try {
+      setIsLoading(true);
+      
+      const selectedRepo = githubRepos.find(repo => repo.id === selectedRepoId);
+      if (!selectedRepo) {
+        console.error('[WORKSPACE-DEBUG] Selected repo not found in repo list');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Extract owner from repository URL or full_name
+      let owner = '';
+      if (selectedRepo.owner && selectedRepo.owner.login) {
+        owner = selectedRepo.owner.login;
+      } else if (selectedRepo.full_name) {
+        const parts = selectedRepo.full_name.split('/');
+        if (parts.length >= 2) {
+          owner = parts[0];
+        }
+      }
+      
+      // Prepare repo data
+      const repoData: GitHubRepoData = {
+        repoId: selectedRepo.id,
+        name: selectedRepo.name,
+        owner: owner,
+        url: selectedRepo.html_url || selectedRepo.url,
+        branch: selectedRepo.default_branch
+      };
+      
+      console.log('[WORKSPACE-DEBUG] Starting repository sync with data:', repoData);
+      console.log('[WORKSPACE-DEBUG] Have token?', !!token, 'Token length:', token ? token.length : 0);
+      console.log('[WORKSPACE-DEBUG] WebSocket connection status available in context?', !!useWebSocketContext);
+      
+      // Use WebSocket context for repository selection
+      try {
+        console.log('[WORKSPACE-DEBUG] Calling selectGitHubRepo...');
+        const { workspaceId } = await selectGitHubRepo(repoData, token || '');
+        
+        console.log('[WORKSPACE-DEBUG] Repository sync complete, workspace ID:', workspaceId);
+        
+        // Set the selected workspace
+        onSelectWorkspace({
+          type: "github",
+          id: workspaceId,
+          name: selectedRepo.name,
+          url: selectedRepo.html_url || selectedRepo.url,
+          description: selectedRepo.description || undefined
+        });
+        
+        // Close the selector
+        onClose();
+      } catch (error) {
+        console.error('[WORKSPACE-DEBUG] Error in selectGitHubRepo:', error);
+        alert(`Error syncing repository: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('[WORKSPACE-DEBUG] Error syncing repository:', error);
+      setIsLoading(false);
+    }
   };
   
   // Handle form submission for local folder

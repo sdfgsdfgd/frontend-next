@@ -10,7 +10,7 @@ const GlassSidebar = dynamic(() => import('./GlassSidebar'), {ssr: false});
 // Import ConnectionStatus component with dynamic import to avoid hydration errors
 const ConnectionStatus = dynamic(
   () => import('../ConnectionStatus'),
-  {ssr: false}
+  { ssr: false }
 );
 
 interface AnimatedSidebarProps {
@@ -41,10 +41,8 @@ export default function AnimatedSidebar({
                 </ul>
               </nav>
 
-              {/* Connection Status Indicator */}
-              <div className="mt-auto mb-4 mx-4 p-2 z-50 rounded-md bg-gray-800/70">
-                <ConnectionStatus url={process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:80/ws"}/>
-              </div>
+              {/* Connection Status */}
+              <ConnectionStatus url={process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:80/ws"}/>
             </div>
           </>
         )}
