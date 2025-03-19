@@ -1,5 +1,5 @@
 <p align="center">
-  ${\color{Goldenrod}\Huge{\textsf{✨ Containerized AI-Driven Conversational Code Comprehension & Automation Platform ✨}}}$ 
+  ${\color{Goldenrod}\Huge{\textsf{✨ Containerized AI-Driven Conversational Code Comprehension \& Automation Platform ✨}}}$ 
 </p>
 
 ---
