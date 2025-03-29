@@ -7,9 +7,9 @@ import { useUserSettings } from '../context/UserSettingsContext';
 import { LuxurySpinner, LunarSpinner, ElegantSpinner } from './ui/ElegantSpinner';
 
 // Message type definitions
-type MessageType = 'user' | 'ai';
+export type MessageType = 'user' | 'ai' | 'system' | 'input';
 
-interface Message {
+export interface Message {
   text: string;
   type: MessageType;
 }
@@ -221,7 +221,7 @@ export default function MessageList({
         >
           <div className="flex items-start">
             <div className="flex-1">
-              <span className="luxury-text luxury-input text-sm sm:text-base">
+              <span className="luxury-text luxury-input text-xs whitespace-pre-wrap">
                 {message.text}
               </span>
             </div>

@@ -1,17 +1,20 @@
 "use client";
 
-import React, { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
+import React, { FormEvent, KeyboardEvent, RefObject, useCallback, useEffect, useRef, useState } from "react";
 
 interface ChatInputProps {
   userInput: string;
   setUserInput: (input: string) => void;
   onSubmit: () => void;
+  placeholder?: string;
+  disabled?: boolean;
+  inputRef?: RefObject<HTMLInputElement | HTMLDivElement>;
 }
 
 const DEFAULT_CARET = {left: 4, top: 6};
 
-export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInputProps) {
-  const inputRef = useRef<HTMLDivElement>(null);
+export default function ChatInput({userInput, setUserInput, onSubmit, placeholder = "Ask the AI ✨", disabled = false, inputRef}: ChatInputProps) {
+  const contentEditableRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [caretPosition, setCaretPosition] = useState(DEFAULT_CARET);
   const [isJSActive, setIsJSActive] = useState(false);
@@ -21,17 +24,25 @@ export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInput
     setIsJSActive(true);
   }, []);
 
+  // Connect the contentEditableRef to the external inputRef if provided
+  useEffect(() => {
+    if (inputRef && contentEditableRef.current) {
+      // @ts-ignore - This is intentional to connect the refs
+      inputRef.current = contentEditableRef.current;
+    }
+  }, [inputRef, contentEditableRef.current]);
+
   // Keep the DOM content in sync with `userInput` if needed
   useEffect(() => {
-    if (inputRef.current && inputRef.current.textContent !== userInput) {
+    if (contentEditableRef.current && contentEditableRef.current.textContent !== userInput) {
       // can this cause cursor jumps if done after each keystroke ?
-      inputRef.current.textContent = userInput;
+      contentEditableRef.current.textContent = userInput;
     }
   }, [userInput]);
 
   // Helper to compute the new caret position
   const calculateCaretPosition = useCallback(() => {
-    const el = inputRef.current;
+    const el = contentEditableRef.current;
     if (!el) return DEFAULT_CARET;
 
     // If input is empty or we have no selection, place caret at the default
@@ -60,34 +71,37 @@ export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInput
 
   // On focus/blur, track state
   const handleFocus = () => {
+    if (disabled) return;
     setIsFocused(true);
     // Let the DOM settle, then set caret
     setTimeout(updateCaretPosition, 10);
+
+    // Forward focus to external ref if provided
+    if (inputRef && inputRef.current) {
+      inputRef.current.focus();
+    }
   };
 
   const handleBlur = () => {
     setIsFocused(false);
   };
 
-  // Listen for selection changes only while focused
+  // Listen for selection changes while focused
   useEffect(() => {
     if (!isFocused) return;
 
-    document.addEventListener("selectionchange", updateCaretPosition);
-    window.addEventListener("resize", updateCaretPosition);
+    const handleSelectionChange = () => {
+      updateCaretPosition();
+    };
 
-    // On mount of effect, do initial positioning
-    updateCaretPosition();
-
+    document.addEventListener('selectionchange', handleSelectionChange);
     return () => {
-      document.removeEventListener("selectionchange", updateCaretPosition);
-      window.removeEventListener("resize", updateCaretPosition);
+      document.removeEventListener('selectionchange', handleSelectionChange);
     };
   }, [isFocused, updateCaretPosition]);
 
-  // Handle keystrokes
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onSubmit();
     }
@@ -95,20 +109,22 @@ export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInput
 
   // Sync userInput from contentEditable
   const handleInput = (e: FormEvent<HTMLDivElement>) => {
+    if (disabled) return;
     setUserInput(e.currentTarget.textContent || "");
   };
 
   // Clicking on container focuses the contentEditable
   const handleContainerClick = () => {
-    if (inputRef.current) {
-      inputRef.current.focus();
+    if (disabled) return;
+    if (contentEditableRef.current) {
+      contentEditableRef.current.focus();
       setTimeout(updateCaretPosition, 10);
     }
   };
 
   return (
     <div
-      className="relative w-auto max-w-full min-w-[100px] px-2 py-2 cursor-text"
+      className={`relative w-auto max-w-full min-w-[100px] px-2 py-2 cursor-text ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
       onClick={handleContainerClick}
     >
       <div className="custom-caret-container relative">
@@ -117,9 +133,10 @@ export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInput
             luxury-input px-3 py-2 text-[var(--elegant-gold)] outline-none bg-none
             w-auto max-w-full min-w-[120px] custom-caret
             ${isJSActive ? "js-active" : ""}
+            ${disabled ? "pointer-events-none" : ""}
           `}
-          ref={inputRef}
-          contentEditable
+          ref={contentEditableRef}
+          contentEditable={!disabled}
           suppressContentEditableWarning
           onInput={handleInput}
           onKeyDown={handleKeyDown}
@@ -133,7 +150,7 @@ export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInput
         />
 
         {/* Custom caret element - only displayed if JS is active */}
-        {isFocused && isJSActive && (
+        {isFocused && isJSActive && !disabled && (
           <div
             className="pointer-events-none absolute animate-caretBlink"
             style={{
@@ -155,7 +172,7 @@ export default function ChatInput({userInput, setUserInput, onSubmit}: ChatInput
         {/* Placeholder when unfocused & empty */}
         {!isFocused && !userInput && (
           <div className="pointer-events-none text-[var(--elegant-gold-dim)] absolute top-2 left-4">
-            Ask the AI ✨
+            {placeholder}
           </div>
         )}
       </div>

@@ -2,16 +2,18 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import useDebounce from "../hooks/useDebounce";
-import useOpenAI from "../hooks/useOpenAI";
-import { useUserSettings } from "../context/UserSettingsContext";
 import MessageList from "./MessageList";
 import ChatInput from "./ChatInput";
 import "../globals.css";
-import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import useContainer from "../hooks/useContainer";
+import { ContainerStatus } from "../context/WebSocketContext";
+import { Message, MessageType } from "./MessageList";
 
-type MessageType = "user" | "ai";
+// Message type constants
 const MSG_USER: MessageType = "user";
 const MSG_AI: MessageType = "ai";
+const MSG_SYSTEM: MessageType = "system";
+const MSG_INPUT: MessageType = "input";
 
 // Persistent flag to track if the welcome message has been played in this session
 const SESSION_WELCOME_KEY = 'welcome_message_played';
@@ -52,25 +54,66 @@ const messageStyles: Record<MessageType, string> = {
     duration-300
     text-shadow
     animate-elegant-text-glow
+  `,
+  system: `
+    bg-gradient-to-r from-blue-900/30 to-blue-800/30
+    text-blue-200
+    shadow-lg shadow-blue-900/20
+    border border-blue-700/30
+    backdrop-blur-sm
+    self-center
+    hover:scale-[1.01]
+    transition
+    duration-300
+    text-shadow
+  `,
+  input: `
+    bg-gradient-to-r from-purple-900/30 to-purple-800/30
+    text-purple-200
+    shadow-lg shadow-purple-900/20
+    border border-purple-700/30
+    backdrop-blur-sm
+    self-start
+    hover:scale-[1.01]
+    transition
+    duration-300
+    text-shadow
   `
 };
 
+// Map container status to human-readable text
+const containerStatusText: Record<ContainerStatus, string> = {
+  idle: "Ready to start",
+  starting: "Starting container...",
+  running: "Container running",
+  input_needed: "Input required",
+  error: "Container error",
+  exited: "Container exited"
+};
+
 export default function AIChatComponent({className}: { className?: string }) {
-  const [messages, setMessages] = useState<{ text: string; type: MessageType }[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState<string>("");
-  const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [isWaitingForResponse, setIsWaitingForResponse] = useState<boolean>(false);
   const debouncedInput = useDebounce(input, 300);
 
   // Refs for DOM elements
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatInputAreaRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement | HTMLDivElement>(null);
 
-  // Track if this is the first mount for welcome message
-  const isFirstMount = useRef<boolean>(true);
-
-  // Get OpenAI context functions and user settings
-  const {generateCompletion, isKeyValid, hasApiKey, say, stopCurrentAudio, isAudioPlaying} = useOpenAI();
-  const {autoVoiceEnabled} = useUserSettings();
+  // Container hook
+  const { 
+    status: containerStatus, 
+    output: containerOutput, 
+    error: containerError,
+    isWaitingForInput,
+    isRunning,
+    startContainer,
+    sendInput,
+    stopContainer,
+    resetContainer
+  } = useContainer();
 
   // Auto-scroll to the bottom when messages change
   useEffect(() => {
@@ -79,111 +122,139 @@ export default function AIChatComponent({className}: { className?: string }) {
     }
   }, [messages]);
 
-  // Debug log on mount with welcome message - single consolidated welcome message
+  // Debug log on mount with welcome message
   useEffect(() => {
-    console.log("[AICHAT-DEBUG] AIChatComponent mounted");
-    console.log("[AICHAT-DEBUG] Context state:", {
-      hasApiKey,
-      isAudioPlaying,
-      autoVoiceEnabled
+    console.log("[CONTAINER-CHAT-DEBUG] ContainerChatComponent mounted");
+    console.log("[CONTAINER-CHAT-DEBUG] Container state:", {
+      containerStatus,
+      isWaitingForInput,
+      isRunning
     });
 
-    // Reference to track if component is still mounted
-    let isMounted = true;
-    // Timer reference for cleanup
-    let welcomeTimer: NodeJS.Timeout | null = null;
-
-    // Check if we've already played the welcome message in this session
-    const hasPlayedWelcomeMessage = sessionStorage.getItem(SESSION_WELCOME_KEY) === 'true';
-
-    // Create a welcome message only if we have API key and it's the first mount
-    // and we haven't played the welcome message yet this session
-    if (hasApiKey && isFirstMount.current && !hasPlayedWelcomeMessage) {
-      isFirstMount.current = false;
-      console.log('[AICHAT-DEBUG] First mount with API key, adding welcome message');
-
-      // TODO ------------------------ !!!!!!!!!!! ------------------------------------
-      const welcomeMessage = "Going through the code !";
-
-      // Important: Set the welcome message BEFORE playing audio to ensure it's visible
-      setMessages([{text: welcomeMessage, type: MSG_AI}]);
-
-      // CRITICAL FIX: Directly mark that we've played the welcome message in this session
-      // to avoid any issues with re-renders or missed session storage updates
+    // Add welcome message on first mount if not already added
+    if (messages.length === 0) {
+      setMessages([{
+        text: "Container terminal ready. Select a repository and click Start to begin.",
+        type: MSG_SYSTEM
+      }]);
+      
+      // Mark welcome message as played
       sessionStorage.setItem(SESSION_WELCOME_KEY, 'true');
-
-      // Only play welcome message if auto-voice is enabled
-      if (autoVoiceEnabled) {
-        console.log('[AICHAT-DEBUG] Auto-voice enabled, scheduling welcome message playback');
-
-        // IMPORTANT: Guaranteed playback with shorter, more reliable delay
-        welcomeTimer = setTimeout(() => {
-          // Only proceed if component is still mounted
-          if (!isMounted) {
-            console.error('[AICHAT-DEBUG] Component unmounted before welcome audio could play');
-            return;
-          }
-
-          // Only play audio if component is still mounted and no audio is playing
-          console.log('[AICHAT-DEBUG] Playing welcome message audio:', {
-            hasApiKey,
-            isAudioPlaying,
-            componentStillMounted: isMounted
-          });
-
-          // IMPORTANT: Force play the welcome message, ignoring audio playing state
-          // since this is a critical user experience feature
-          stopCurrentAudio(); // Make sure no other audio is playing
-          console.log('[AICHAT-DEBUG] Playing welcome message audio (auto-voice enabled)');
-
-          say(welcomeMessage)
-            .then(() => {
-              if (isMounted) {
-                console.log('[AICHAT-DEBUG] Welcome message audio completed successfully');
-              }
-            })
-            .catch((err: Error) => {
-              if (isMounted) {
-                console.error("[AICHAT-DEBUG] Failed to play welcome message:", err);
-              }
-            });
-        }, 500);
-      } else {
-        console.log('[AICHAT-DEBUG] Auto-voice disabled, skipping welcome message audio');
-      }
-    } else {
-      console.log('[AICHAT-DEBUG] Not playing welcome message:', {
-        isFirstMount: isFirstMount.current,
-        hasApiKey,
-        hasPlayedWelcomeMessage
-      });
     }
-
-    // Clean up audio resources when component unmounts
+    
+    // Clean up function
     return () => {
-      console.log("[AICHAT-DEBUG] AIChatComponent unmounting, cleaning up resources");
-
-      // Mark component as unmounted to prevent state updates
-      isMounted = false;
-
-      // Clear the welcome message timeout if it exists
-      if (welcomeTimer) {
-        console.log("[AICHAT-DEBUG] Clearing welcome message timeout");
-        clearTimeout(welcomeTimer);
-      }
-
-      // We no longer need to stop audio on unmount since AudioManager is persistent
-      // This was causing the audio to stop during React StrictMode remounting
-      console.log("[AICHAT-DEBUG] Component unmounted but not stopping audio to allow playback to continue");
+      console.log("[CONTAINER-CHAT-DEBUG] ContainerChatComponent unmounting");
     };
-  }, [hasApiKey, say, stopCurrentAudio, isAudioPlaying, autoVoiceEnabled]);
+  }, []);
+
+  // Monitor container output and update messages
+  useEffect(() => {
+    if (containerOutput.length === 0) return;
+    
+    // Get the latest output message
+    const latestOutput = containerOutput[containerOutput.length - 1];
+    
+    console.log('[CONTAINER-CHAT-DEBUG] Processing output message:', {
+      timestamp: latestOutput.timestamp,
+      type: latestOutput.type,
+      contentPreview: latestOutput.content.substring(0, 50) + (latestOutput.content.length > 50 ? '...' : ''),
+      contentLength: latestOutput.content.length,
+      currentMessagesCount: messages.length
+    });
+    
+    // Check for input marker
+    const hasInputMarker = latestOutput.content.includes('`````INPUT`````') || latestOutput.content.includes('`````INPUT');
+    if (hasInputMarker) {
+      console.log('[CONTAINER-CHAT-DEBUG] INPUT MARKER DETECTED in container output');
+    }
+    
+    // Check if we already have this message (by content)
+    const contentMatches = messages.filter(msg => msg.text === latestOutput.content);
+    
+    console.log('[CONTAINER-CHAT-DEBUG] Content-based duplicate check:', {
+      matchesFound: contentMatches.length,
+      isDuplicate: contentMatches.length > 0,
+      lastMessagePreview: messages.length > 0 ? messages[messages.length-1].text.substring(0, 50) : 'no messages',
+      hasInputMarker
+    });
+    
+    // Only add if we don't already have this exact content
+    if (contentMatches.length === 0) {
+      // Map container output type to message type
+      let messageType: MessageType;
+      switch (latestOutput.type) {
+        case 'input':
+          messageType = MSG_USER;
+          break;
+        case 'error':
+          messageType = MSG_SYSTEM;
+          break;
+        default:
+          messageType = MSG_AI;
+      }
+      
+      // Special handling for input requests
+      if (latestOutput.type === 'input' || latestOutput.content.includes('`````INPUT`````') || latestOutput.content.includes('`````INPUT')) {
+        messageType = MSG_INPUT;
+      }
+      
+      // Message text is just the content
+      const messageText = latestOutput.content;
+      
+      console.log('[CONTAINER-CHAT-DEBUG] Adding new UI message:', {
+        type: messageType,
+        contentPreview: messageText.substring(0, 50) + (messageText.length > 50 ? '...' : '')
+      });
+      
+      // Add the new message
+      setMessages(prev => [...prev, {
+        text: messageText,
+        type: messageType
+      }]);
+    } else {
+      console.log('[CONTAINER-CHAT-DEBUG] Skipping duplicate message');
+    }
+  }, [containerOutput, messages]);
+
+  // Monitor container status changes
+  useEffect(() => {
+    // Add status messages for important state transitions
+    if (containerStatus === 'starting') {
+      setMessages(prev => [...prev, {
+        text: "Starting Arcana container...",
+        type: MSG_SYSTEM
+      }]);
+      setIsWaitingForResponse(true);
+    } 
+    else if (containerStatus === 'running') {
+      setIsWaitingForResponse(false);
+    }
+    else if (containerStatus === 'error' && containerError) {
+      setMessages(prev => [...prev, {
+        text: `Error: ${containerError}`,
+        type: MSG_SYSTEM
+      }]);
+      setIsWaitingForResponse(false);
+    }
+    else if (containerStatus === 'exited') {
+      setMessages(prev => [...prev, {
+        text: "Container has exited",
+        type: MSG_SYSTEM
+      }]);
+      setIsWaitingForResponse(false);
+    }
+    else if (containerStatus === 'input_needed') {
+      setIsWaitingForResponse(false);
+    }
+  }, [containerStatus, containerError]);
 
   // -----------------------------------
   // (1) Smooth Scroll for Msg List updates
   // -----------------------------------
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({behavior: "smooth"});
-  }, [messages, isTyping]);
+  }, [messages, isWaitingForResponse]);
 
   // Optional: see what user typed after a pause
   useEffect(() => {
@@ -228,85 +299,216 @@ export default function AIChatComponent({className}: { className?: string }) {
     });
   }, [input]); // trigger every time the userInput changes
 
-  // API response handling function with OpenAI
-  const handleUserQuery = async () => {
-    if (!input.trim()) return;
-
-    // Add user message
-    setMessages((prev) => [...prev, {text: input, type: MSG_USER}]);
-    const currentInput = input; // Save the current input
-    setInput(""); // Clear input field
-    setIsTyping(true);
-
-    try {
-      // If we don't have an API key, fall back to simulated response
-      if (!hasApiKey) {
-        setTimeout(() => {
-          setMessages((prev) => [...prev, {
-            text: "Please add your OpenAI API key to enable AI responses.",
-            type: MSG_AI
-          }]);
-          setIsTyping(false);
-        }, 1000);
-        return;
-      }
-
-      // Convert message history to OpenAI format
-      const messageHistory: ChatCompletionMessageParam[] = messages.map(msg => ({
-        role: msg.type === MSG_USER ? "user" : "assistant",
-        content: msg.text
-      }));
-
-      // Add system message at the beginning
-      const systemMessage: ChatCompletionMessageParam = {
-        role: "system",
-        content: "You are an AI assistant. Be concise, helpful and friendly."
-      };
-
-      // Add the current user message
-      messageHistory.push({
-        role: "user",
-        content: currentInput
-      });
-
-      // Get AI response from OpenAI
-      const aiResponse = await generateCompletion([systemMessage, ...messageHistory]);
-
-      // Add AI response to message list
-      setMessages((prev) => [...prev, {text: aiResponse, type: MSG_AI}]);
-    } catch (error) {
-      console.error('[CHAT] Error getting AI response:', error);
-      // Handle error by showing error message
-      setMessages((prev) => [...prev, {
-        text: `Error: ${error instanceof Error ? error.message : 'Failed to get AI response'}`,
-        type: MSG_AI
-      }]);
-    } finally {
-      setIsTyping(false);
+  // -----------------------------------
+  // (3) Scroll when input area appears/disappears
+  // -----------------------------------
+  useEffect(() => {
+    console.log('[CONTAINER-CHAT-DEBUG] isWaitingForInput changed to:', isWaitingForInput);
+    
+    // When input becomes required, scroll to make it visible
+    if (isWaitingForInput) {
+      console.log('[CONTAINER-CHAT-DEBUG] Attempting to scroll due to isWaitingForInput = true');
+      
+      // Focus the input element after a short delay to ensure it's rendered
+      setTimeout(() => {
+        if (chatInputRef.current) {
+          console.log('[CONTAINER-CHAT-DEBUG] Focusing input element');
+          chatInputRef.current.focus();
+          
+          // Use browser's native scrollIntoView behavior as a backup
+          chatInputRef.current.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'center' 
+          });
+        } else {
+          console.log('[CONTAINER-CHAT-DEBUG] Input element ref is null');
+        }
+      }, 300);
+      
+      // Wait for 1 second before scrolling to ensure transitions are complete
+      setTimeout(() => {
+        console.log('[CONTAINER-CHAT-DEBUG] Running delayed scroll (1s)');
+        
+        // Schedule scroll for next frame to ensure DOM is updated
+        requestAnimationFrame(() => {
+          console.log('[CONTAINER-CHAT-DEBUG] Running scroll in requestAnimationFrame');
+          
+          // First scroll the window
+          window.scrollTo({
+            top: document.body.scrollHeight,
+            behavior: "smooth",
+          });
+          
+          // Find and scroll the nearest scrollable parent
+          if (messagesEndRef.current) {
+            const scrollableParent = findNearestScrollableParent(messagesEndRef.current);
+            if (scrollableParent) {
+              console.log('[CONTAINER-CHAT-DEBUG] Found scrollable parent, scrolling to:', scrollableParent.scrollHeight);
+              
+              scrollableParent.scrollTo({
+                top: scrollableParent.scrollHeight,
+                behavior: "smooth",
+              });
+              
+              // Additional scroll after transition starts
+              setTimeout(() => {
+                console.log('[CONTAINER-CHAT-DEBUG] Running 100ms delayed scroll');
+                scrollableParent.scrollTo({
+                  top: scrollableParent.scrollHeight,
+                  behavior: "smooth",
+                });
+              }, 100);
+              
+              // Final scroll after transition nearly complete
+              setTimeout(() => {
+                console.log('[CONTAINER-CHAT-DEBUG] Running 400ms delayed scroll');
+                scrollableParent.scrollTo({
+                  top: scrollableParent.scrollHeight,
+                  behavior: "smooth",
+                });
+              }, 400);
+            } else {
+              console.log('[CONTAINER-CHAT-DEBUG] No scrollable parent found for messagesEndRef');
+            }
+          } else {
+            console.log('[CONTAINER-CHAT-DEBUG] messagesEndRef.current is null');
+          }
+        });
+      }, 1000); // 1 second delay for scrolling
     }
+  }, [isWaitingForInput]); // Only trigger when isWaitingForInput changes
+
+  // Handle user input submission
+  const handleUserQuery = async () => {
+    // Modified to allow empty input when awaiting input
+    if (!input.trim() && !isWaitingForInput) return;
+
+    // If container is not running, start it
+    if (!isRunning) {
+      // Add user message
+      setMessages(prev => [...prev, {text: input, type: MSG_USER}]);
+      setInput(""); // Clear input field
+      
+      // Check if the input is a start command
+      if (input.toLowerCase().includes('start')) {
+        try {
+          setIsWaitingForResponse(true);
+          await startContainer();
+          // Status change will be handled by the status effect
+        } catch (error) {
+          console.error("[CONTAINER-CHAT] Error starting container:", error);
+          setMessages(prev => [...prev, {
+            text: `Failed to start container: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            type: MSG_SYSTEM
+          }]);
+          setIsWaitingForResponse(false);
+        }
+      } else {
+        // Just respond with a system message
+        setMessages(prev => [...prev, {
+          text: "Container is not running. Type 'start' to begin.",
+          type: MSG_SYSTEM
+        }]);
+      }
+      return;
+    }
+    
+    // If container is waiting for input, send it
+    if (isWaitingForInput) {
+      // Add user message
+      setMessages(prev => [...prev, {text: input, type: MSG_USER}]);
+      const currentInput = input; // Save the current input
+      setInput(""); // Clear input field
+      
+      try {
+        setIsWaitingForResponse(true);
+        await sendInput(currentInput);
+        // Don't add any messages here, as the container output listener will do that
+      } catch (error) {
+        console.error("[CONTAINER-CHAT] Error sending input:", error);
+        setMessages(prev => [...prev, {
+          text: `Failed to send input: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          type: MSG_SYSTEM
+        }]);
+        setIsWaitingForResponse(false);
+      }
+      return;
+    }
+    
+    // If container is running but not waiting for input, just add the message
+    // and inform user that the container is not waiting for input
+    setMessages(prev => [...prev, {text: input, type: MSG_USER}]);
+    setInput(""); // Clear input field
+    
+    // Add system message
+    setMessages(prev => [...prev, {
+      text: "The container is not waiting for input at the moment.",
+      type: MSG_SYSTEM
+    }]);
   };
 
   return (
     <div
       className={`flex flex-col rounded-lg overflow-hidden border border-[rgba(138,101,52,0.1)] min-h-[400px] h-full bg-black/20 backdrop-blur-sm ${className || ''}`}>
+      <div className="flex items-center justify-between p-2 bg-gradient-to-r from-gray-900 to-gray-800 border-b border-[rgba(138,101,52,0.2)]">
+        <div className="text-[rgba(138,101,52,0.8)] text-sm font-mono">
+          Container Status: <span className={`inline-block px-2 py-0.5 rounded ${
+            containerStatus === 'error' ? 'bg-red-900/50 text-red-200' :
+            containerStatus === 'running' ? 'bg-green-900/50 text-green-200' :
+            containerStatus === 'input_needed' ? 'bg-yellow-900/50 text-yellow-200' :
+            'bg-gray-900/50 text-gray-300'
+          }`}>{containerStatusText[containerStatus]}</span>
+        </div>
+        
+        <div className="flex space-x-2">
+          <button 
+            onClick={() => {
+              startContainer()
+                .catch(err => console.error("[CONTAINER-CHAT] Error starting container:", err));
+            }}
+            disabled={isRunning}
+            className="px-2 py-1 text-xs bg-blue-900/50 text-blue-200 rounded border border-blue-700/50 disabled:opacity-50"
+          >
+            Start
+          </button>
+          <button
+            onClick={() => {
+              stopContainer()
+                .catch(err => console.error("[CONTAINER-CHAT] Error stopping container:", err));
+            }}
+            disabled={!isRunning}
+            className="px-2 py-1 text-xs bg-red-900/50 text-red-200 rounded border border-red-700/50 disabled:opacity-50"
+          >
+            Stop
+          </button>
+        </div>
+      </div>
+      
       <MessageList
         messages={messages}
-        isTyping={isTyping}
+        isTyping={isWaitingForResponse}
         messageStyles={messageStyles}
         messagesEndRef={messagesEndRef}
       />
-      <div ref={chatInputAreaRef} className="flex justify-center items-start py-4 min-h-[4rem] w-auto max-w-full">
-        <div className="relative flex flex-col rounded-lg overflow-x-auto w-auto min-w-[16rem] max-w-full
-          transition duration-300 px-5 py-2.5
-          focus-within:ring-2 ring-blue-500/60 ring-offset-2 ring-offset-gray-900/70
-          shadow-top-inset shadow-bottom shadow-2xl
-          animate-colorCycleGlow input-focus-glow border border-black/50"
-        >
-          <ChatInput
-            userInput={input}
-            setUserInput={setInput}
-            onSubmit={handleUserQuery}
-          />
+      
+      {/* Only show input when waiting for input, with fade in/out effect */}
+      <div className={`transition-all duration-500 ease-in-out ${isWaitingForInput ? 'opacity-100 max-h-24' : 'opacity-0 max-h-0 overflow-hidden'}`}>
+        <div ref={chatInputAreaRef} className="flex justify-center items-start py-4 min-h-[4rem] w-auto max-w-full">
+          <div className="relative flex flex-col rounded-lg overflow-x-auto w-auto min-w-[16rem] max-w-full
+            transition duration-300 px-5 py-2.5
+            focus-within:ring-2 ring-blue-500/60 ring-offset-2 ring-offset-gray-900/70
+            shadow-top-inset shadow-bottom shadow-2xl
+            animate-colorCycleGlow input-focus-glow border border-black/50"
+          >
+            <ChatInput
+              userInput={input}
+              setUserInput={setInput}
+              onSubmit={handleUserQuery}
+              placeholder="Enter your input..."
+              disabled={isWaitingForResponse}
+              inputRef={chatInputRef}
+            />
+          </div>
         </div>
       </div>
     </div>

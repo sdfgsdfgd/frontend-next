@@ -8,6 +8,7 @@ import { WorkspaceProvider } from './context/WorkspaceContext';
 import { SidebarProvider } from './context/SidebarContext';
 import { WebSocketProvider } from './context/WebSocketContext';
 import UserSettingsProvider from './context/UserSettingsContext';
+import { OpenAIProvider } from './context/OpenAIContext';
 
 // Import our client-side responsive layout component
 const ResponsiveLayout = dynamic(
@@ -51,17 +52,19 @@ export default function RootLayout({children,}: {
     <html lang="en" className={`${inter.variable} ${crimsonPro.variable} bg-gray-900 text-gray-100 font-mono`}>
       <body>
         <AuthProvider>
-          <WebSocketProvider>
-            <WorkspaceProvider>
-              <SidebarProvider>
-                <UserSettingsProvider>
-                  <ResponsiveLayout>
-                    {children}
-                  </ResponsiveLayout>
-                </UserSettingsProvider>
-              </SidebarProvider>
-            </WorkspaceProvider>
-          </WebSocketProvider>
+          <OpenAIProvider>
+            <WebSocketProvider>
+              <WorkspaceProvider>
+                <SidebarProvider>
+                  <UserSettingsProvider>
+                    <ResponsiveLayout>
+                      {children}
+                    </ResponsiveLayout>
+                  </UserSettingsProvider>
+                </SidebarProvider>
+              </WorkspaceProvider>
+            </WebSocketProvider>
+          </OpenAIProvider>
         </AuthProvider>
       </body>
     </html>
