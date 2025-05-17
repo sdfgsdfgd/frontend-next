@@ -2,19 +2,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { JetBrains_Mono, Crimson_Pro, Inter } from 'next/font/google'
 import React from "react";
-import dynamic from 'next/dynamic';
-import AuthProvider from './context/AuthContext';
-import { WorkspaceProvider } from './context/WorkspaceContext';
-import { SidebarProvider } from './context/SidebarContext';
-import { WebSocketProvider } from './context/WebSocketContext';
-import UserSettingsProvider from './context/UserSettingsContext';
-import { OpenAIProvider } from './context/OpenAIContext';
-
-// Import our client-side responsive layout component
-const ResponsiveLayout = dynamic(
-  () => import('./components/ui/ResponsiveLayout'),
-  { ssr: false }
-);
+import Providers from './components/Providers';
 
 // For code and main text - elegant monospace
 const jetbrainsMono = JetBrains_Mono({
@@ -51,21 +39,9 @@ export default function RootLayout({children,}: {
     // <html lang="en" className={`${jetbrainsMono.variable} ${crimsonPro.variable} bg-gray-900 text-gray-100 font-mono`}>
     <html lang="en" className={`${inter.variable} ${crimsonPro.variable} bg-gray-900 text-gray-100 font-mono`}>
       <body>
-        <AuthProvider>
-          <OpenAIProvider>
-            <WebSocketProvider>
-              <WorkspaceProvider>
-                <SidebarProvider>
-                  <UserSettingsProvider>
-                    <ResponsiveLayout>
-                      {children}
-                    </ResponsiveLayout>
-                  </UserSettingsProvider>
-                </SidebarProvider>
-              </WorkspaceProvider>
-            </WebSocketProvider>
-          </OpenAIProvider>
-        </AuthProvider>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )

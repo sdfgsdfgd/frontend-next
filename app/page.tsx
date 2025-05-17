@@ -13,7 +13,6 @@ import ApiKeyCard from "./components/openai/ApiKeyCard";
 import { ModalControlContext } from "./context/ModalContext";
 import ContentSyncEffect from "./components/ui/ContentSyncEffect";
 import SessionDebug from "./components/auth/SessionDebug";
-import { OpenAIProvider } from "./context/OpenAIContext";
 
 export default function Home() {
   const {isAuthenticated, isLoading, token} = useAuth();
@@ -110,8 +109,7 @@ export default function Home() {
   }, [isAuthenticated, isWorkspaceSelected, token, setWorkspace]);
 
   return (
-    <OpenAIProvider>
-      <OpenAIWrapper 
+    <OpenAIWrapper
         isAuthModalOpen={isAuthModalOpen}
         isWorkspaceSelectorOpen={isWorkspaceSelectorOpen}
         isApiKeyModalOpen={isApiKeyModalOpen}
@@ -123,7 +121,6 @@ export default function Home() {
         isLoading={isLoading}
         clearWorkspace={clearWorkspace}
       />
-    </OpenAIProvider>
   );
 }
 
