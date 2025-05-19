@@ -10,9 +10,9 @@
 
 |  Task                                            | Details/Link                                                     |
 |---------------------------------------------------------|------------------------------------------------------------------|
-| 🔸      **WIP-1**                                       | 📁 File / Folder indexing in sandbox _(via backend)_             |
-| 🔸      **WIP-2**                                       | 📥 Repo cloning in sandbox _(via backend)_                       |
-| 🔸      **WIP-3**                                       | 🔑 API key entry & otherwise error popup                         |
+| 🔸      **Done **                                       | 📁 File / Folder indexing in sandbox _(via backend)_             |
+| 🔸      **Done **                                       | 📥 Repo cloning in sandbox _(via backend)_                       |
+| 🔸      **Done **                                       | 🔑 API key entry & otherwise error popup                         |
 | 🔸      **WIP-4**                                       | 🎛️ [Mode toggles from Morphic](https://github.com/miurla/morphic/blob/main/components/mode-toggle.tsx) |
 | 🔸      **WIP-5**                                       | 🌌 Vasturiano force-directed graph representation of Codebase at top _(beyond P2 stage)_          |
 ---
