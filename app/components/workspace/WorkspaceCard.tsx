@@ -141,7 +141,7 @@ export default function WorkspaceCard({ onClose }: WorkspaceCardProps) {
     }
   };
   
-  // Handle local folder selection using File System Access API where supported
+  // Handle local folder selection using File System Access API where supported -
   const handleLocalFolderSelect = async () => {
     try {
       // Check if the File System Access API is available
